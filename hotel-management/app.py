@@ -10,6 +10,8 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = 'secret123'
 
+print("KEY ID:", os.getenv("RAZORPAY_KEY_ID"))
+print("KEY SECRET:", os.getenv("RAZORPAY_KEY_SECRET"))
 
 razorpay_client = razorpay.Client(
     auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
@@ -229,18 +231,24 @@ def logout():
 def create_order():
     data = request.get_json()
     amount = data.get('amount')
+    print("Amount received:", amount)
 
     if not amount:
         return jsonify({"error": "Amount is required"}), 400
 
-    # Razorpay expects amount in paise
-    amount_in_paise = int(amount) * 100
+    try:
+        amount_in_paise = int(amount) * 100
+        order = razorpay_client.order.create({
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "payment_capture": 1
+        })
+        print("Order created:", order)
+        return jsonify(order)
+    except Exception as e:
+        print("❌ Razorpay order creation error:", e)
+        return jsonify({"error": str(e)}), 500
 
-    order = razorpay_client.order.create({
-        "amount": amount_in_paise,
-        "currency": "INR",
-        "payment_capture": 1
-    })
 
     return jsonify(order)
 @app.route('/confirm-booking', methods=['POST'])
