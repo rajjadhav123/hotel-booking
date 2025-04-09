@@ -5,7 +5,11 @@ import razorpay
 from dotenv import load_dotenv
 load_dotenv()
 
-
+# Add at the top of your app.py after imports
+print("===== DEBUGGING RAZORPAY CREDENTIALS =====")
+print(f"KEY ID: '{os.getenv('RAZORPAY_KEY_ID')}'")
+print(f"KEY SECRET LENGTH: {len(os.getenv('RAZORPAY_KEY_SECRET', ''))} chars")
+print("==========================================")
 app = Flask(__name__)
 app.secret_key = 'secret123'
 
@@ -144,7 +148,6 @@ def dashboard():
         c.execute("SELECT * FROM hotels")
         hotels = [dict(id=row[0], name=row[1], location=row[2], image_path=row[3]) for row in c.fetchall()]
     return render_template('user_dashboard.html', hotels=hotels)
-
 @app.route('/hotel/<int:hotel_id>', methods=['GET'])
 def hotel_detail(hotel_id):
     if 'user_id' not in session:
@@ -155,8 +158,17 @@ def hotel_detail(hotel_id):
         hotel = c.fetchone()
         c.execute("SELECT * FROM rooms WHERE hotel_id=?", (hotel_id,))
         rooms = [dict(id=row[0], room_type=row[2], is_booked=row[3]) for row in c.fetchall()]
-    return render_template('hotel_detail.html', hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2]}, rooms=rooms)
-
+        
+    from datetime import datetime
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    
+    return render_template(
+        'hotel_detail.html', 
+        hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2]}, 
+        rooms=rooms,
+        current_date=current_date,
+        razorpay_key_id=os.getenv("RAZORPAY_KEY_ID")
+    )
 @app.route('/book/<int:room_id>', methods=['POST'])
 def book_room(room_id):
     if 'user_id' not in session:
@@ -248,8 +260,6 @@ def create_order():
         print("❌ Razorpay order creation error:", e)
         return jsonify({"error": str(e)}), 500
 
-
-    return jsonify(order)
 @app.route('/confirm-booking', methods=['POST'])
 def confirm_booking():
     data = request.get_json()
