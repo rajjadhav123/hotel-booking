@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Hotel</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container mt-5 col-md-6">
+    <h3>Add New Hotel</h3>
+    <form method="POST">
+      <div class="mb-3">
+        <label>Hotel Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label>Location</label>
+        <input type="text" name="location" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label>Image Filename (store image in static/images/)</label>
+        <input type="text" name="image_path" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label>No. of Rooms</label>
+        <input type="number" name="rooms" class="form-control" required>
+      </div>
+      <button class="btn btn-success w-100" type="submit">Add Hotel</button>
+    </form>
+  </div>
+</body>
+</html>
