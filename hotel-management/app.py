@@ -1,10 +1,19 @@
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash,jsonify
 import sqlite3
 import os
+import razorpay
+from dotenv import load_dotenv
+load_dotenv()
+
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
+
+
+razorpay_client = razorpay.Client(
+    auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
+)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database', 'hotel.db')
 
@@ -216,9 +225,59 @@ def logout():
     session.clear()
     return redirect("https://hotel-booking-xq6q.onrender.com/login")
 
+@app.route('/create-order', methods=['POST'])
+def create_order():
+    data = request.get_json()
+    amount = data.get('amount')
+
+    if not amount:
+        return jsonify({"error": "Amount is required"}), 400
+
+    # Razorpay expects amount in paise
+    amount_in_paise = int(amount) * 100
+
+    order = razorpay_client.order.create({
+        "amount": amount_in_paise,
+        "currency": "INR",
+        "payment_capture": 1
+    })
+
+    return jsonify(order)
+@app.route('/confirm-booking', methods=['POST'])
+def confirm_booking():
+    data = request.get_json()
+    room_id = data.get('room_id')
+    checkin = data.get('checkin_date')
+    checkout = data.get('checkout_date')
+
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("SELECT is_booked FROM rooms WHERE id=?", (room_id,))
+        status = c.fetchone()
+        if status and status[0] == 0:
+            c.execute("UPDATE rooms SET is_booked=1 WHERE id=?", (room_id,))
+            c.execute("""INSERT INTO bookings (user_id, room_id, checkin_date, checkout_date)
+                         VALUES (?, ?, ?, ?)""",
+                      (session['user_id'], room_id, checkin, checkout))
+            conn.commit()
+            return jsonify({"message": "Booking confirmed!"})
+        else:
+            return jsonify({"error": "Room already booked or invalid"}), 400
+
+
+@app.route('/payment-success')
+def payment_success():
+    return "✅ Payment successful!"
 
 
 if __name__ == '__main__':
     os.makedirs(os.path.join(os.path.dirname(__file__), 'database'), exist_ok=True)
     init_db()
     app.run(debug=True)
+
+
+
+
+
+
+
