@@ -214,7 +214,8 @@ def delete_hotel(hotel_id):
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect("https://hotel-booking-xq6q.onrender.com/login")
+
 
 
 if __name__ == '__main__':
