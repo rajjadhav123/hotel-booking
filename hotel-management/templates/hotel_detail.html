@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="container mt-4">
-    <a href="http://127.0.0.1:5000/login" class="btn btn-outline-secondary float-end">Log Out</a>
+    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary float-end">Log Out</a>
     <h3>{{ hotel['name'] }} - Rooms</h3>
     <p>{{ hotel['location'] }}</p>
     <div class="row">
@@ -50,6 +50,9 @@
         input.addEventListener("change", function () {
           const checkOutInput = this.closest("form").querySelector(".checkout-date");
           checkOutInput.min = this.value;
+          if (checkOutInput.value && new Date(checkOutInput.value) <= new Date(this.value)) {
+            checkOutInput.value = '';
+          }
         });
       });
 
@@ -59,75 +62,98 @@
     });
 
     function payNow(button) {
-      const form = button.closest('form');
-      const roomId = form.querySelector('[name="room_id"]').value;
-      const checkin = form.querySelector('[name="checkin_date"]').value;
-      const checkout = form.querySelector('[name="checkout_date"]').value;
-      
-      // Validate dates
-      if (!checkin || !checkout) {
-        alert("Please select both check-in and check-out dates");
-        return;
-      }
-      
-      if (new Date(checkout) <= new Date(checkin)) {
-        alert("Check-out date must be after check-in date");
-        return;
-      }
+      try {
+        const form = button.closest('form');
+        const roomId = form.querySelector('[name="room_id"]').value;
+        const checkin = form.querySelector('[name="checkin_date"]').value;
+        const checkout = form.querySelector('[name="checkout_date"]').value;
+        
+        // Validate dates
+        if (!checkin || !checkout) {
+          alert("Please select both check-in and check-out dates");
+          return;
+        }
+        
+        if (new Date(checkout) <= new Date(checkin)) {
+          alert("Check-out date must be after check-in date");
+          return;
+        }
 
-      fetch("/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 500 })  // ₹500 in INR
-      })
-      .then(res => res.json())
-      .then(order => {
-        const options = {
-          key: "{{ razorpay_key_id }}", // from Flask template
-          amount: order.amount,
-          currency: "INR",
-          name: "Hotel Booking",
-          description: "Room Booking",
-          order_id: order.id,
-          handler: function (response) {
-            // Payment success → call /confirm-booking
-            fetch("/confirm-booking", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                room_id: roomId,
-                checkin_date: checkin,
-                checkout_date: checkout,
-                payment_id: response.razorpay_payment_id,
-                order_id: response.razorpay_order_id,
-                signature: response.razorpay_signature
-              })
-            })
-            .then(res => res.json())
-            .then(data => {
-              if (data.message) {
-                alert("✅ Booking Confirmed!");
-                window.location.href = "/dashboard";
-              } else {
-                alert("⚠️ Booking failed: " + data.error);
-              }
-            })
-            .catch(err => {
-              alert("⚠️ Error processing booking");
-              console.error(err);
+        console.log("Creating payment order for room:", roomId);
+        
+        fetch("{{ url_for('create_order') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: 500 })  // ₹500 in INR
+        })
+        .then(res => {
+          if (!res.ok) {
+            return res.json().then(data => {
+              throw new Error(data.error || "Server responded with an error");
             });
-          },
-          theme: {
-            color: "#3399cc"
           }
-        };
-        const rzp = new Razorpay(options);
-        rzp.open();
-      })
-      .catch(err => {
-        alert("⚠️ Error creating payment order");
-        console.error(err);
-      });
+          return res.json();
+        })
+        .then(order => {
+          console.log("Order created:", order);
+          const options = {
+            key: "{{ razorpay_key_id }}", // from Flask template
+            amount: order.amount,
+            currency: "INR",
+            name: "Hotel Booking",
+            description: "Room Booking",
+            order_id: order.id,
+            handler: function (response) {
+              console.log("Payment successful:", response);
+              // Payment success → call /confirm-booking
+              fetch("{{ url_for('confirm_booking') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  room_id: roomId,
+                  checkin_date: checkin,
+                  checkout_date: checkout,
+                  payment_id: response.razorpay_payment_id,
+                  order_id: response.razorpay_order_id,
+                  signature: response.razorpay_signature
+                })
+              })
+              .then(res => {
+                if (!res.ok) {
+                  return res.json().then(data => {
+                    throw new Error(data.error || "Server responded with an error");
+                  });
+                }
+                return res.json();
+              })
+              .then(data => {
+                if (data.message) {
+                  alert("✅ Booking Confirmed!");
+                  window.location.href = "{{ url_for('dashboard') }}";
+                } else {
+                  alert("⚠️ Booking failed: " + data.error);
+                }
+              })
+              .catch(err => {
+                console.error("Booking confirmation error:", err);
+                alert("⚠️ Error processing booking: " + err.message);
+              });
+            },
+            theme: {
+              color: "#3399cc"
+            }
+          };
+          const rzp = new Razorpay(options);
+          rzp.open();
+        })
+        .catch(err => {
+          console.error("Payment order creation error:", err);
+          alert("⚠️ Error creating payment order: " + err.message);
+        });
+      } catch (err) {
+        console.error("JavaScript error:", err);
+        alert("⚠️ An unexpected error occurred: " + err.message);
+      }
     }
   </script>
 </body>
