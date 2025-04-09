@@ -211,6 +211,11 @@ def delete_hotel(hotel_id):
         c.execute("DELETE FROM hotels WHERE id=?", (hotel_id,))
         conn.commit()
     return redirect('/admin')
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     os.makedirs(os.path.join(os.path.dirname(__file__), 'database'), exist_ok=True)

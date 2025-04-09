@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="container mt-4">
-    <a href="http://127.0.0.1:5000/login" class="btn btn-outline-secondary float-end">Log Out</a>
+<a href="{{ url_for('logout') }}" class="btn btn-outline-secondary float-end">Log Out</a>
     <h3>Available Hotels</h3>
     <div class="row">
       {% for hotel in hotels %}
