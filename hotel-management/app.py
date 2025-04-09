@@ -16,9 +16,16 @@ app.secret_key = 'secret123'
 print("KEY ID:", os.getenv("RAZORPAY_KEY_ID"))
 print("KEY SECRET:", os.getenv("RAZORPAY_KEY_SECRET"))
 
-razorpay_client = razorpay.Client(
-    auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
-)
+razorpay_key_id = os.getenv("RAZORPAY_KEY_ID")
+razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET")
+# Validate credentials before creating client
+if not razorpay_key_id or not razorpay_key_secret:
+    print("⚠️ WARNING: Razorpay credentials missing or incomplete!")
+    # Initialize with empty strings to prevent NoneType errors
+    razorpay_client = razorpay.Client(auth=("", ""))
+else:
+    razorpay_client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+    print("✅ Razorpay client initialized successfully")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database', 'hotel.db')
 
@@ -246,6 +253,9 @@ def create_order():
 
     if not amount:
         return jsonify({"error": "Amount is required"}), 400
+        
+    if not razorpay_key_id or not razorpay_key_secret:
+        return jsonify({"error": "Razorpay credentials not configured properly"}), 500
 
     try:
         amount_in_paise = int(amount) * 100
