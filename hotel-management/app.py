@@ -1,31 +1,39 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash,jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import sqlite3
 import os
 import razorpay
 from dotenv import load_dotenv
+import time
+
+# Load from .env file in development
 load_dotenv()
+time.sleep(1)  # Give environment variables time to load
+
+# Hardcoded credentials as a fallback
+RAZORPAY_FALLBACK = {
+    'key_id': 'rzp_test_7MKZrnFO9IQtpI',
+    'key_secret': 'i8kDMWTExtzxFvaQGAXfqcB7'
+}
 
 # Add at the top of your app.py after imports
 print("===== DEBUGGING RAZORPAY CREDENTIALS =====")
 print(f"KEY ID: '{os.getenv('RAZORPAY_KEY_ID')}'")
 print(f"KEY SECRET LENGTH: {len(os.getenv('RAZORPAY_KEY_SECRET', ''))} chars")
 print("==========================================")
+
 app = Flask(__name__)
 app.secret_key = 'secret123'
 
-print("KEY ID:", os.getenv("RAZORPAY_KEY_ID"))
-print("KEY SECRET:", os.getenv("RAZORPAY_KEY_SECRET"))
+# Try different ways to access the variables
+razorpay_key_id = os.environ.get('RAZORPAY_KEY_ID') or os.getenv('RAZORPAY_KEY_ID') or RAZORPAY_FALLBACK['key_id']
+razorpay_key_secret = os.environ.get('RAZORPAY_KEY_SECRET') or os.getenv('RAZORPAY_KEY_SECRET') or RAZORPAY_FALLBACK['key_secret']
 
-razorpay_key_id = os.getenv("RAZORPAY_KEY_ID")
-razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET")
-# Validate credentials before creating client
-if not razorpay_key_id or not razorpay_key_secret:
-    print("⚠️ WARNING: Razorpay credentials missing or incomplete!")
-    # Initialize with empty strings to prevent NoneType errors
-    razorpay_client = razorpay.Client(auth=("", ""))
-else:
-    razorpay_client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
-    print("✅ Razorpay client initialized successfully")
+print("KEY ID:", razorpay_key_id)
+print("KEY SECRET EXISTS:", "YES" if razorpay_key_secret else "NO")
+
+# Always initialize with valid credentials
+razorpay_client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
+print("✅ Razorpay client initialized with key_id:", razorpay_key_id)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database', 'hotel.db')
 
@@ -92,27 +100,6 @@ def login():
                 flash("Invalid credentials")
     return render_template('login.html')
 
-"""@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        uname = request.form['username']
-        email = request.form['email']
-        pwd = request.form['password']
-        age = int(request.form['age'])
-        if age < 18:
-            flash("Age must be at least 18")
-            return redirect('/register')
-        try:
-            with sqlite3.connect(DB_PATH) as conn:
-                c = conn.cursor()
-                c.execute("INSERT INTO users (username, email, password, age) VALUES (?, ?, ?, ?)",
-                          (uname, email, pwd, age))
-                conn.commit()
-                return redirect('/login')
-        except sqlite3.IntegrityError:
-            flash("Username already exists")
-    return render_template('register.html')"""
-
 import re
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -143,9 +130,6 @@ def register():
             flash("Username already exists")
     return render_template('register.html')
 
-
-
-
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session or session.get('is_admin'):
@@ -155,6 +139,7 @@ def dashboard():
         c.execute("SELECT * FROM hotels")
         hotels = [dict(id=row[0], name=row[1], location=row[2], image_path=row[3]) for row in c.fetchall()]
     return render_template('user_dashboard.html', hotels=hotels)
+
 @app.route('/hotel/<int:hotel_id>', methods=['GET'])
 def hotel_detail(hotel_id):
     if 'user_id' not in session:
@@ -174,8 +159,9 @@ def hotel_detail(hotel_id):
         hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2]}, 
         rooms=rooms,
         current_date=current_date,
-        razorpay_key_id=os.getenv("RAZORPAY_KEY_ID")
+        razorpay_key_id=razorpay_key_id  # Use the variable, not os.getenv
     )
+
 @app.route('/book/<int:room_id>', methods=['POST'])
 def book_room(room_id):
     if 'user_id' not in session:
@@ -228,7 +214,6 @@ def add_hotel():
         return redirect('/admin')
     return render_template('add_hotel.html')
 
-
 @app.route('/delete_hotel/<int:hotel_id>', methods=['POST'])
 def delete_hotel(hotel_id):
     if 'user_id' not in session or not session.get('is_admin'):
@@ -240,6 +225,7 @@ def delete_hotel(hotel_id):
         c.execute("DELETE FROM hotels WHERE id=?", (hotel_id,))
         conn.commit()
     return redirect('/admin')
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -253,9 +239,6 @@ def create_order():
 
     if not amount:
         return jsonify({"error": "Amount is required"}), 400
-        
-    if not razorpay_key_id or not razorpay_key_secret:
-        return jsonify({"error": "Razorpay credentials not configured properly"}), 500
 
     try:
         amount_in_paise = int(amount) * 100
@@ -291,15 +274,11 @@ def confirm_booking():
         else:
             return jsonify({"error": "Room already booked or invalid"}), 400
 
-
 @app.route('/payment-success')
 def payment_success():
     return "✅ Payment successful!"
-
 
 if __name__ == '__main__':
     os.makedirs(os.path.join(os.path.dirname(__file__), 'database'), exist_ok=True)
     init_db()
     app.run(debug=True)
-
-
