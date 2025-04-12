@@ -8,25 +8,60 @@
 </head>
 <body>
   <div class="container mt-4">
-    <h3>Admin Dashboard</h3>
-<a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary float-end">Log Out</a>
-    <a href="/add_hotel" class="btn btn-primary my-3">Add New Hotel</a>
+    <div class="d-flex justify-content-between align-items-center">
+      <h3>Admin Dashboard</h3>
+      <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary">Log Out</a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="row mb-4 mt-3">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Quick Actions</h5>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="/add_hotel" class="btn btn-primary">Add New Hotel</a>
+              <a href="/admin/bookings" class="btn btn-info">View All Bookings</a>
+              <a href="/admin/users" class="btn btn-secondary">Manage Users</a>
+              <a href="/admin/reports" class="btn btn-success">View Reports</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h4>Manage Hotels</h4>
     <div class="row">
       {% for hotel in hotels %}
       <div class="col-md-4">
         <div class="card mb-4">
-          <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top">
+          <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="{{ hotel['name'] }}">
           <div class="card-body">
             <h5 class="card-title">{{ hotel['name'] }}</h5>
             <p>{{ hotel['location'] }}</p>
-            <form method="POST" action="/delete_hotel/{{ hotel['id'] }}">
-              <button class="btn btn-danger w-100">Delete Hotel</button>
-            </form>
+            <div class="d-flex gap-2">
+              <a href="/edit_hotel/{{ hotel['id'] }}" class="btn btn-warning flex-grow-1">Edit</a>
+              <form method="POST" action="/delete_hotel/{{ hotel['id'] }}" class="flex-grow-1">
+                <button class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to delete this hotel?')">Delete</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
       {% endfor %}
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

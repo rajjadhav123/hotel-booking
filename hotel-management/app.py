@@ -314,7 +314,228 @@ def my_bookings():
         ) for row in c.fetchall()]
     
     return render_template('my_bookings.html', bookings=bookings)
+@app.route('/admin/bookings')
+def admin_bookings():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("""
+            SELECT b.id, u.username, u.email, h.name, r.room_type, b.checkin_date, b.checkout_date
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN rooms r ON b.room_id = r.id
+            JOIN hotels h ON r.hotel_id = h.id
+            ORDER BY b.id DESC
+        """)
+        
+        bookings = [dict(
+            id=row[0],
+            username=row[1],
+            email=row[2],
+            hotel_name=row[3],
+            room_type=row[4],
+            checkin=row[5],
+            checkout=row[6]
+        ) for row in c.fetchall()]
+    
+    return render_template('admin_bookings.html', bookings=bookings)
+@app.route('/edit_hotel/<int:hotel_id>', methods=['GET', 'POST'])
+def edit_hotel(hotel_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        if request.method == 'POST':
+            name = request.form['name']
+            location = request.form['location']
+            image_path = request.form['image_path']
+            
+            c.execute("UPDATE hotels SET name = ?, location = ?, image_path = ? WHERE id = ?", 
+                     (name, location, image_path, hotel_id))
+            conn.commit()
+            flash("Hotel updated successfully")
+            return redirect('/admin')
+        
+        # Get hotel data for the form
+        c.execute("SELECT * FROM hotels WHERE id = ?", (hotel_id,))
+        hotel = c.fetchone()
+        
+        # Get rooms for this hotel
+        c.execute("SELECT * FROM rooms WHERE hotel_id = ?", (hotel_id,))
+        rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
+        
+    return render_template('edit_hotel.html', 
+                          hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2], 'image_path': hotel[3]},
+                          rooms=rooms)
 
+@app.route('/add_room/<int:hotel_id>', methods=['POST'])
+def add_room(hotel_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    room_type = request.form['room_type']
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO rooms (hotel_id, room_type) VALUES (?, ?)", (hotel_id, room_type))
+        conn.commit()
+    
+    return redirect(f'/edit_hotel/{hotel_id}')
+
+@app.route('/delete_room/<int:room_id>/<int:hotel_id>', methods=['POST'])
+def delete_room(room_id, hotel_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # First check if this room has bookings
+        c.execute("SELECT id FROM bookings WHERE room_id = ?", (room_id,))
+        if c.fetchone():
+            flash("Cannot delete room with active bookings")
+        else:
+            c.execute("DELETE FROM rooms WHERE id = ?", (room_id,))
+            conn.commit()
+            flash("Room deleted successfully")
+    
+    return redirect(f'/edit_hotel/{hotel_id}')
+@app.route('/admin/cancel_booking/<int:booking_id>', methods=['GET'])
+def admin_cancel_booking(booking_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Get the room ID associated with this booking
+        c.execute("SELECT room_id FROM bookings WHERE id = ?", (booking_id,))
+        result = c.fetchone()
+        
+        if result:
+            room_id = result[0]
+            
+            # Delete the booking
+            c.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+            
+            # Set room back to available
+            c.execute("UPDATE rooms SET is_booked = 0 WHERE id = ?", (room_id,))
+            
+            conn.commit()
+            flash("Booking successfully canceled")
+        else:
+            flash("Booking not found")
+            
+    return redirect('/admin/bookings')
+@app.route('/admin/users')
+def admin_users():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, username, email, age, is_admin FROM users")
+        
+        users = [dict(
+            id=row[0],
+            username=row[1],
+            email=row[2],
+            age=row[3],
+            is_admin=row[4]
+        ) for row in c.fetchall()]
+    
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/toggle_admin/<int:user_id>', methods=['POST'])
+def toggle_admin(user_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    # Prevent self-demotion
+    if user_id == session['user_id']:
+        flash("You cannot change your own admin status")
+        return redirect('/admin/users')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Get current status
+        c.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+        result = c.fetchone()
+        
+        if result:
+            current_status = result[0]
+            new_status = 0 if current_status else 1
+            
+            c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (new_status, user_id))
+            conn.commit()
+            flash("User status updated successfully")
+    
+    return redirect('/admin/users')
+@app.route('/admin/reports')
+def admin_reports():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Get total counts
+        c.execute("SELECT COUNT(*) FROM hotels")
+        total_hotels = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM rooms")
+        total_rooms = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM bookings")
+        total_bookings = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM users WHERE is_admin = 0")
+        total_users = c.fetchone()[0]
+        
+        # Get booking stats by hotel
+        c.execute("""
+            SELECT h.name, COUNT(b.id) as booking_count
+            FROM hotels h
+            LEFT JOIN rooms r ON h.id = r.hotel_id
+            LEFT JOIN bookings b ON r.id = b.room_id
+            GROUP BY h.id
+            ORDER BY booking_count DESC
+        """)
+        
+        hotel_stats = [dict(name=row[0], bookings=row[1]) for row in c.fetchall()]
+        
+        # Get recent bookings
+        c.execute("""
+            SELECT b.id, u.username, h.name, r.room_type, b.checkin_date, b.checkout_date
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN rooms r ON b.room_id = r.id
+            JOIN hotels h ON r.hotel_id = h.id
+            ORDER BY b.id DESC
+            LIMIT 5
+        """)
+        
+        recent_bookings = [dict(
+            id=row[0],
+            username=row[1],
+            hotel=row[2],
+            room=row[3],
+            checkin=row[4],
+            checkout=row[5]
+        ) for row in c.fetchall()]
+    
+    return render_template('admin_reports.html', 
+                          total_hotels=total_hotels,
+                          total_rooms=total_rooms,
+                          total_bookings=total_bookings,
+                          total_users=total_users,
+                          hotel_stats=hotel_stats,
+                          recent_bookings=recent_bookings)
 @app.route('/payment-success')
 def payment_success():
     return "✅ Payment successful!"
