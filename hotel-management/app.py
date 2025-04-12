@@ -536,6 +536,34 @@ def admin_reports():
                           total_users=total_users,
                           hotel_stats=hotel_stats,
                           recent_bookings=recent_bookings)
+@app.route('/admin/database', methods=['GET'])
+def view_database():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    data = {}
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row  # This enables column access by name
+        c = conn.cursor()
+        
+        # Get all users
+        c.execute("SELECT * FROM users")
+        data['users'] = [dict(row) for row in c.fetchall()]
+        
+        # Get all hotels
+        c.execute("SELECT * FROM hotels")
+        data['hotels'] = [dict(row) for row in c.fetchall()]
+        
+        # Get all rooms
+        c.execute("SELECT * FROM rooms")
+        data['rooms'] = [dict(row) for row in c.fetchall()]
+        
+        # Get all bookings
+        c.execute("SELECT * FROM bookings")
+        data['bookings'] = [dict(row) for row in c.fetchall()]
+        
+    return render_template('database_view.html', data=data)
 @app.route('/payment-success')
 def payment_success():
     return "✅ Payment successful!"

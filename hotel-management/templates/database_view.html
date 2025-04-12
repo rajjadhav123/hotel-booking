@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database View</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        h2 {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Database Contents</h1>
+    
+    <h2>Users</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Age</th>
+            <th>Is Admin</th>
+        </tr>
+        {% for user in data.users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.age }}</td>
+            <td>{{ user.is_admin }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h2>Hotels</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Location</th>
+            <th>Image Path</th>
+        </tr>
+        {% for hotel in data.hotels %}
+        <tr>
+            <td>{{ hotel.id }}</td>
+            <td>{{ hotel.name }}</td>
+            <td>{{ hotel.location }}</td>
+            <td>{{ hotel.image_path }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h2>Rooms</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Hotel ID</th>
+            <th>Room Type</th>
+            <th>Is Booked</th>
+        </tr>
+        {% for room in data.rooms %}
+        <tr>
+            <td>{{ room.id }}</td>
+            <td>{{ room.hotel_id }}</td>
+            <td>{{ room.room_type }}</td>
+            <td>{{ room.is_booked }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h2>Bookings</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>User ID</th>
+            <th>Room ID</th>
+            <th>Check-in Date</th>
+            <th>Check-out Date</th>
+        </tr>
+        {% for booking in data.bookings %}
+        <tr>
+            <td>{{ booking.id }}</td>
+            <td>{{ booking.user_id }}</td>
+            <td>{{ booking.room_id }}</td>
+            <td>{{ booking.checkin_date }}</td>
+            <td>{{ booking.checkout_date }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
