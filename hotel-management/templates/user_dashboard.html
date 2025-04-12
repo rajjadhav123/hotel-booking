@@ -4,305 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hotel Booking Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    :root {
-      --primary: #4361ee;
-      --secondary: #3f37c9;
-      --accent: #f72585;
-      --light: #f8f9fa;
-      --dark: #212529;
-      --gray: #6c757d;
-      --light-gray: #e9ecef;
-    }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f8fafc;
-    }
-    
-    /* Navbar styling */
-    .navbar {
-      background-color: white !important;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-      padding: 15px 0;
-    }
-    
-    .navbar-brand {
-      font-weight: 700;
-      color: var(--primary) !important;
-      font-size: 1.5rem;
-    }
-    
-    .nav-link {
-      font-weight: 500;
-      color: var(--dark) !important;
-      margin: 0 5px;
-      transition: all 0.3s;
-    }
-    
-    .nav-link:hover, .nav-link.active {
-      color: var(--primary) !important;
-    }
-    
-    .btn-outline-danger {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    
-    .btn-outline-danger:hover {
-      background-color: var(--accent);
-      color: white;
-    }
-    
-    /* Card styling */
     .hotel-card {
-      transition: transform 0.3s, box-shadow 0.3s;
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      transition: transform 0.3s;
       height: 100%;
-      overflow: hidden;
     }
-    
     .hotel-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
-    
     .card-img-top {
       height: 200px;
       object-fit: cover;
     }
-    
-    .card-body {
-      padding: 1.5rem;
+    .booking-history-card {
+      border-left: 4px solid #0d6efd;
     }
-    
-    .card-title {
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--dark);
-    }
-    
-    /* Button styling */
-    .btn-primary {
-      background-color: var(--primary);
-      border-color: var(--primary);
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-weight: 500;
-    }
-    
-    .btn-primary:hover {
-      background-color: var(--secondary);
-      border-color: var(--secondary);
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
-    }
-    
-    .btn-outline-primary {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-    
-    .btn-outline-primary:hover {
-      background-color: var(--primary);
-      color: white;
-    }
-    
-    /* Search section */
-    .search-section {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      padding: 40px 0;
-      border-radius: 16px;
-      margin-bottom: 40px;
-      color: white;
-    }
-    
-    .search-heading {
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
-    
-    .search-input {
-      border-radius: 30px;
-      padding: 12px 20px;
-      border: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    
-    .search-btn {
-      border-radius: 30px;
-      padding: 12px 25px;
-      background-color: var(--accent);
-      border-color: var(--accent);
-    }
-    
-    .search-btn:hover {
-      background-color: #e5126f;
-      border-color: #e5126f;
-    }
-    
-    /* Filter card */
-    .filter-card {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-    
-    .filter-card .card-header {
-      background-color: var(--primary);
-      color: white;
-      font-weight: 600;
-      border-top-left-radius: 12px;
-      border-top-right-radius: 12px;
-      padding: 15px 20px;
-    }
-    
-    .filter-card .card-body {
-      padding: 20px;
-    }
-    
-    .filter-card h6 {
-      font-weight: 600;
-      margin-bottom: 10px;
-      color: var(--dark);
-    }
-    
-    .form-select {
-      border-radius: 6px;
-      padding: 10px;
-      border-color: #e0e0e0;
-    }
-    
-    /* Section headings */
     .section-heading {
-      font-weight: 700;
-      color: var(--dark);
-      border-bottom: 2px solid var(--light-gray);
-      padding-bottom: 15px;
-      margin-bottom: 25px;
-    }
-    
-    /* Footer */
-    .footer {
-      background-color: #fff;
-      padding: 50px 0 20px;
-      margin-top: 60px;
-      border-top: 1px solid var(--light-gray);
-    }
-    
-    .footer h5 {
-      font-weight: 700;
-      color: var(--dark);
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
       margin-bottom: 20px;
     }
-    
-    .footer p, .footer address {
-      color: var(--gray);
-      line-height: 1.6;
+    .footer {
+      background-color: #f8f9fa;
+      padding: 20px 0;
+      margin-top: 40px;
     }
-    
     .social-icon {
       font-size: 1.5rem;
       margin-right: 15px;
-      color: var(--gray);
-      transition: all 0.3s;
+      color: #6c757d;
     }
-    
     .social-icon:hover {
-      color: var(--primary);
-      transform: translateY(-3px);
-    }
-    
-    .footer a {
-      color: var(--gray);
-      text-decoration: none;
-      transition: all 0.3s;
-    }
-    
-    .footer a:hover {
-      color: var(--primary);
-      text-decoration: none;
-    }
-    
-    .footer ul li {
-      margin-bottom: 10px;
-    }
-    
-    .footer-bottom {
-      padding-top: 20px;
-      margin-top: 20px;
-      border-top: 1px solid var(--light-gray);
-      color: var(--gray);
-    }
-    
-    /* Popular destinations */
-    .destination-card {
-      position: relative;
-      overflow: hidden;
-      border-radius: 12px;
-      height: 200px;
-      border: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    
-    .destination-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s;
-    }
-    
-    .destination-card:hover img {
-      transform: scale(1.1);
-    }
-    
-    .destination-info {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-      color: white;
-      padding: 20px;
-    }
-    
-    .destination-info h5 {
-      margin: 0;
-      font-weight: 700;
-    }
-    
-    .destination-info p {
-      margin: 5px 0 0;
-      opacity: 0.9;
-    }
-    
-    /* Booking history */
-    .booking-history-card {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-      border-left: 4px solid var(--primary);
-      margin-bottom: 20px;
-    }
-    
-    .booking-history-card .card-body {
-      padding: 20px;
-    }
-    
-    .badge {
-      padding: 8px 12px;
-      font-weight: 500;
-      border-radius: 30px;
+      color: #0d6efd;
     }
   </style>
 </head>
 <body>
   <!-- Navigation Bar -->
-  <nav class="navbar navbar-expand-lg navbar-light">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
       <a class="navbar-brand" href="#">
         <i class="fas fa-hotel me-2"></i>
@@ -330,7 +73,7 @@
           </li>
         </ul>
         <div class="d-flex align-items-center">
-          <div class="me-3 fw-bold">Welcome, {{ session['username'] }}</div>
+          <div class="me-3">Welcome, {{ session['username'] }}</div>
           <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-danger">
             <i class="fas fa-sign-out-alt me-1"></i> Log Out
           </a>
@@ -340,25 +83,20 @@
   </nav>
 
   <!-- Main Content -->
-  <div class="container mt-4">
+  <div class="container my-4">
     <!-- Search and Filter Section -->
-    <div class="search-section mb-4 p-4">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-5">
-            <h2 class="search-heading mb-0">
-              <i class="fas fa-search me-2"></i>Find Your Perfect Stay
-            </h2>
-            <p class="mb-0 mt-2">Discover your ideal accommodation from our wide selection</p>
-          </div>
-          <div class="col-md-7">
-            <div class="input-group">
-              <input type="text" class="form-control search-input" id="searchHotels" placeholder="Search hotels or destinations...">
-              <button class="btn btn-primary search-btn">
-                <i class="fas fa-search me-1"></i> Search
-              </button>
-            </div>
-          </div>
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <h3 class="section-heading">
+          <i class="fas fa-search me-2"></i>Find Your Perfect Stay
+        </h3>
+      </div>
+      <div class="col-md-4">
+        <div class="input-group">
+          <input type="text" class="form-control" id="searchHotels" placeholder="Search hotels...">
+          <button class="btn btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -367,8 +105,8 @@
     <div class="row">
       <div class="col-md-3 mb-4">
         <!-- Filter Card -->
-        <div class="card filter-card sticky-top" style="top: 20px">
-          <div class="card-header">
+        <div class="card sticky-top" style="top: 20px">
+          <div class="card-header bg-primary text-white">
             <h5 class="mb-0">
               <i class="fas fa-filter me-2"></i>Filters
             </h5>
@@ -394,30 +132,6 @@
                 <option value="za">Name (Z-A)</option>
               </select>
             </div>
-            
-            <h6>Price Range</h6>
-            <div class="mb-3">
-              <select class="form-select">
-                <option value="all">All Prices</option>
-                <option value="budget">Budget</option>
-                <option value="mid">Mid-range</option>
-                <option value="luxury">Luxury</option>
-              </select>
-            </div>
-            
-            <h6>Rating</h6>
-            <div class="mb-3">
-              <select class="form-select">
-                <option value="all">Any Rating</option>
-                <option value="5">5 Stars</option>
-                <option value="4">4+ Stars</option>
-                <option value="3">3+ Stars</option>
-              </select>
-            </div>
-            
-            <button class="btn btn-primary w-100">
-              <i class="fas fa-check me-1"></i> Apply Filters
-            </button>
           </div>
         </div>
       </div>
@@ -428,25 +142,18 @@
           <i class="fas fa-hotel me-2"></i>Available Hotels
         </h3>
         <div class="row" id="hotelContainer">
-          <!-- Sample hotel cards - would be generated dynamically in real app -->
-          <div class="col-md-4 mb-4 hotel-item" data-location="Mumbai">
+          {% for hotel in hotels %}
+          <div class="col-md-4 mb-4 hotel-item" data-location="{{ hotel['location'] }}">
             <div class="card hotel-card">
-              <img src="/api/placeholder/400/200" class="card-img-top" alt="Hotel Grand">
+              <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="{{ hotel['name'] }}">
               <div class="card-body">
-                <h5 class="card-title">Hotel Grand Mumbai</h5>
+                <h5 class="card-title">{{ hotel['name'] }}</h5>
                 <p class="card-text">
                   <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                  Mumbai
+                  {{ hotel['location'] }}
                 </p>
-                <div class="text-warning mb-2">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="far fa-star"></i>
-                </div>
                 <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/1" class="btn btn-primary">
+                  <a href="/hotel/{{ hotel['id'] }}" class="btn btn-primary">
                     <i class="fas fa-door-open me-1"></i> View Rooms
                   </a>
                   <button class="btn btn-outline-danger btn-sm">
@@ -456,146 +163,7 @@
               </div>
             </div>
           </div>
-          
-          <div class="col-md-4 mb-4 hotel-item" data-location="Delhi">
-            <div class="card hotel-card">
-              <img src="/api/placeholder/400/200" class="card-img-top" alt="Delhi Palace">
-              <div class="card-body">
-                <h5 class="card-title">Delhi Palace Hotel</h5>
-                <p class="card-text">
-                  <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                  Delhi
-                </p>
-                <div class="text-warning mb-2">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/2" class="btn btn-primary">
-                    <i class="fas fa-door-open me-1"></i> View Rooms
-                  </a>
-                  <button class="btn btn-outline-danger btn-sm">
-                    <i class="far fa-heart"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-4 hotel-item" data-location="Jaipur">
-            <div class="card hotel-card">
-              <img src="/api/placeholder/400/200" class="card-img-top" alt="Jaipur Retreat">
-              <div class="card-body">
-                <h5 class="card-title">Jaipur Retreat</h5>
-                <p class="card-text">
-                  <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                  Jaipur
-                </p>
-                <div class="text-warning mb-2">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="far fa-star"></i>
-                  <i class="far fa-star"></i>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/3" class="btn btn-primary">
-                    <i class="fas fa-door-open me-1"></i> View Rooms
-                  </a>
-                  <button class="btn btn-outline-danger btn-sm">
-                    <i class="far fa-heart"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-4 hotel-item" data-location="Nashik">
-            <div class="card hotel-card">
-              <img src="/api/placeholder/400/200" class="card-img-top" alt="Nashik Gateway">
-              <div class="card-body">
-                <h5 class="card-title">Nashik Gateway</h5>
-                <p class="card-text">
-                  <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                  Nashik
-                </p>
-                <div class="text-warning mb-2">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star-half-alt"></i>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/4" class="btn btn-primary">
-                    <i class="fas fa-door-open me-1"></i> View Rooms
-                  </a>
-                  <button class="btn btn-outline-danger btn-sm">
-                    <i class="far fa-heart"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-4 hotel-item" data-location="Andheri">
-            <div class="card hotel-card">
-              <img src="/api/placeholder/400/200" class="card-img-top" alt="Andheri Suites">
-              <div class="card-body">
-                <h5 class="card-title">Andheri Suites</h5>
-                <p class="card-text">
-                  <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                  Andheri
-                </p>
-                <div class="text-warning mb-2">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="far fa-star"></i>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/5" class="btn btn-primary">
-                    <i class="fas fa-door-open me-1"></i> View Rooms
-                  </a>
-                  <button class="btn btn-outline-danger btn-sm">
-                    <i class="far fa-heart"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-4 mb-4 hotel-item" data-location="Mumbai">
-            <div class="card hotel-card">
-              <img src="/api/placeholder/400/200" class="card-img-top" alt="Mumbai Marine">
-              <div class="card-body">
-                <h5 class="card-title">Mumbai Marine</h5>
-                <p class="card-text">
-                  <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                  Mumbai
-                </p>
-                <div class="text-warning mb-2">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/6" class="btn btn-primary">
-                    <i class="fas fa-door-open me-1"></i> View Rooms
-                  </a>
-                  <button class="btn btn-outline-danger btn-sm">
-                    <i class="far fa-heart"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -609,31 +177,9 @@
         <div class="row">
           <div class="col-md-12" id="bookingsContainer">
             <!-- This would be populated dynamically -->
-            <div class="card booking-history-card mb-3">
-              <div class="card-body">
-                <h5 class="card-title">Hotel Grand Mumbai Booking</h5>
-                <div class="row">
-                  <div class="col-md-4">
-                    <p class="mb-1"><strong>Check-in:</strong> 2025-04-15</p>
-                    <p><strong>Check-out:</strong> 2025-04-18</p>
-                  </div>
-                  <div class="col-md-4">
-                    <p class="mb-1"><strong>Room Type:</strong> Deluxe Room</p>
-                    <p><strong>Guests:</strong> 2 Adults</p>
-                  </div>
-                  <div class="col-md-4 text-end">
-                    <span class="badge bg-success mb-2">Confirmed</span>
-                    <div>
-                      <button class="btn btn-sm btn-outline-primary me-1">
-                        <i class="fas fa-edit me-1"></i> Modify
-                      </button>
-                      <button class="btn btn-sm btn-outline-danger">
-                        <i class="fas fa-times me-1"></i> Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              Your booking history will appear here once you make a reservation.
             </div>
           </div>
         </div>
@@ -648,38 +194,38 @@
         </h3>
         <div class="row">
           <div class="col-md-3 mb-4">
-            <div class="destination-card">
-              <img src="/api/placeholder/400/200" alt="Goa">
-              <div class="destination-info">
+            <div class="card">
+              <img src="https://hotel-booking-xq6q.onrender.com/static/images/goa.jpg" class="card-img-top" alt="Goa" onerror="this.src='/api/placeholder/400/200'; this.alt='Goa'">
+              <div class="card-body text-center">
                 <h5>Goa</h5>
-                <p>Beach Paradise</p>
+                <p class="text-muted">Beach Paradise</p>
               </div>
             </div>
           </div>
           <div class="col-md-3 mb-4">
-            <div class="destination-card">
-              <img src="/api/placeholder/400/200" alt="Delhi">
-              <div class="destination-info">
+            <div class="card">
+              <img src="https://hotel-booking-xq6q.onrender.com/static/images/delhi.jpg" class="card-img-top" alt="Delhi" onerror="this.src='/api/placeholder/400/200'; this.alt='Delhi'">
+              <div class="card-body text-center">
                 <h5>Delhi</h5>
-                <p>Historical Capital</p>
+                <p class="text-muted">Historical Capital</p>
               </div>
             </div>
           </div>
           <div class="col-md-3 mb-4">
-            <div class="destination-card">
-              <img src="/api/placeholder/400/200" alt="Mumbai">
-              <div class="destination-info">
+            <div class="card">
+              <img src="https://hotel-booking-xq6q.onrender.com/static/images/mumbai.jpg" class="card-img-top" alt="Mumbai" onerror="this.src='/api/placeholder/400/200'; this.alt='Mumbai'">
+              <div class="card-body text-center">
                 <h5>Mumbai</h5>
-                <p>City of Dreams</p>
+                <p class="text-muted">City of Dreams</p>
               </div>
             </div>
           </div>
           <div class="col-md-3 mb-4">
-            <div class="destination-card">
-              <img src="/api/placeholder/400/200" alt="Jaipur">
-              <div class="destination-info">
+            <div class="card">
+              <img src="https://hotel-booking-xq6q.onrender.com/static/images/jaipur.jpg" class="card-img-top" alt="Jaipur" onerror="this.src='/api/placeholder/400/200'; this.alt='Jaipur'">
+              <div class="card-body text-center">
                 <h5>Jaipur</h5>
-                <p>Pink City</p>
+                <p class="text-muted">Pink City</p>
               </div>
             </div>
           </div>
@@ -692,7 +238,7 @@
   <footer class="footer" id="contact">
     <div class="container">
       <div class="row">
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-3">
           <h5><i class="fas fa-hotel me-2"></i>Hotel Booking</h5>
           <p>Find the perfect accommodation for your next trip with our easy-to-use hotel booking platform.</p>
           <div class="mt-3">
@@ -701,7 +247,7 @@
             <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
           </div>
         </div>
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-3">
           <h5><i class="fas fa-link me-2"></i>Quick Links</h5>
           <ul class="list-unstyled">
             <li><a href="/dashboard">Home</a></li>
@@ -711,7 +257,7 @@
             <li><a href="#">FAQ</a></li>
           </ul>
         </div>
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-3">
           <h5><i class="fas fa-envelope me-2"></i>Contact Us</h5>
           <address>
             <i class="fas fa-map-marker-alt me-2"></i>123 Main Street, Mumbai, India<br>
@@ -720,8 +266,8 @@
           </address>
         </div>
       </div>
-      <div class="row footer-bottom">
-        <div class="col-12 text-center">
+      <div class="row">
+        <div class="col-12 text-center border-top pt-3">
           <p class="mb-0">&copy; 2025 Hotel Booking. All rights reserved.</p>
         </div>
       </div>
@@ -784,4 +330,48 @@
       });
       
       // Clear container and append sorted items
-      hotelContainer.
+      hotelContainer.innerHTML = '';
+      hotelItems.forEach(item => {
+        hotelContainer.appendChild(item);
+      });
+    });
+    
+    // Fetch booking history (placeholder - you would implement this with a real API call)
+    function fetchBookingHistory() {
+      // This would be replaced with an actual fetch to your booking history endpoint
+      // For now, we'll just show a message
+      const bookingsContainer = document.getElementById('bookingsContainer');
+      
+      // If you implement a real booking history feature, you would remove this and
+      // replace it with actual booking data from your database
+      /*
+      bookingsContainer.innerHTML = `
+        <div class="card booking-history-card mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Sample Hotel Booking</h5>
+            <div class="row">
+              <div class="col-md-4">
+                <p><strong>Check-in:</strong> 2025-04-15</p>
+                <p><strong>Check-out:</strong> 2025-04-18</p>
+              </div>
+              <div class="col-md-4">
+                <p><strong>Hotel:</strong> Sample Hotel</p>
+                <p><strong>Room Type:</strong> Deluxe Room</p>
+              </div>
+              <div class="col-md-4 text-end">
+                <span class="badge bg-success">Confirmed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      */
+    }
+    
+    // Call this function when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      fetchBookingHistory();
+    });
+  </script>
+</body>
+</html>
