@@ -148,8 +148,17 @@ def hotel_detail(hotel_id):
         c = conn.cursor()
         c.execute("SELECT * FROM hotels WHERE id=?", (hotel_id,))
         hotel = c.fetchone()
-        c.execute("SELECT * FROM rooms WHERE hotel_id=?", (hotel_id,))
-        rooms = [dict(id=row[0], room_type=row[2], is_booked=row[3]) for row in c.fetchall()]
+        
+        # Modified query to correctly check booking status
+        c.execute("""
+            SELECT r.id, r.room_type, 
+                   CASE WHEN b.id IS NOT NULL THEN 1 ELSE r.is_booked END as is_booked
+            FROM rooms r
+            LEFT JOIN bookings b ON r.id = b.room_id
+            WHERE r.hotel_id = ?
+        """, (hotel_id,))
+        
+        rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
         
     from datetime import datetime
     current_date = datetime.now().strftime('%Y-%m-%d')
@@ -159,7 +168,7 @@ def hotel_detail(hotel_id):
         hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2]}, 
         rooms=rooms,
         current_date=current_date,
-        razorpay_key_id=razorpay_key_id  # Use the variable, not os.getenv
+        razorpay_key_id=razorpay_key_id
     )
 
 @app.route('/book/<int:room_id>', methods=['POST'])
@@ -262,8 +271,16 @@ def confirm_booking():
 
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
+        # First check if room is already booked in bookings table
+        c.execute("SELECT id FROM bookings WHERE room_id=?", (room_id,))
+        existing_booking = c.fetchone()
+        
+        if existing_booking:
+            return jsonify({"error": "Room already booked"}), 400
+            
         c.execute("SELECT is_booked FROM rooms WHERE id=?", (room_id,))
         status = c.fetchone()
+        
         if status and status[0] == 0:
             c.execute("UPDATE rooms SET is_booked=1 WHERE id=?", (room_id,))
             c.execute("""INSERT INTO bookings (user_id, room_id, checkin_date, checkout_date)
