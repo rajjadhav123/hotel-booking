@@ -273,6 +273,22 @@ def confirm_booking():
             return jsonify({"message": "Booking confirmed!"})
         else:
             return jsonify({"error": "Room already booked or invalid"}), 400
+@app.route('/my-bookings')
+def my_bookings():
+    if 'user_id' not in session:
+        return redirect('/login')
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("""
+            SELECT b.id, h.name, r.room_type, b.checkin_date, b.checkout_date
+            FROM bookings b
+            JOIN rooms r ON b.room_id = r.id
+            JOIN hotels h ON r.hotel_id = h.id
+            WHERE b.user_id = ?
+        """, (session['user_id'],))
+        bookings = [dict(id=row[0], hotel_name=row[1], room_type=row[2], 
+                         checkin=row[3], checkout=row[4]) for row in c.fetchall()]
+    return jsonify(bookings)
 
 @app.route('/payment-success')
 def payment_success():
