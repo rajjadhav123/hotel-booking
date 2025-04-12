@@ -536,66 +536,6 @@ def admin_reports():
                           total_users=total_users,
                           hotel_stats=hotel_stats,
                           recent_bookings=recent_bookings)
-@app.route('/admin/reports')
-def admin_reports():
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect('/login')
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        
-        # Get total counts
-        c.execute("SELECT COUNT(*) FROM hotels")
-        total_hotels = c.fetchone()[0]
-        
-        c.execute("SELECT COUNT(*) FROM rooms")
-        total_rooms = c.fetchone()[0]
-        
-        c.execute("SELECT COUNT(*) FROM bookings")
-        total_bookings = c.fetchone()[0]
-        
-        c.execute("SELECT COUNT(*) FROM users WHERE is_admin = 0")
-        total_users = c.fetchone()[0]
-        
-        # Get booking stats by hotel
-        c.execute("""
-            SELECT h.name, COUNT(b.id) as booking_count
-            FROM hotels h
-            LEFT JOIN rooms r ON h.id = r.hotel_id
-            LEFT JOIN bookings b ON r.id = b.room_id
-            GROUP BY h.id
-            ORDER BY booking_count DESC
-        """)
-        
-        hotel_stats = [dict(name=row[0], bookings=row[1]) for row in c.fetchall()]
-        
-        # Get recent bookings
-        c.execute("""
-            SELECT b.id, u.username, h.name, r.room_type, b.checkin_date, b.checkout_date
-            FROM bookings b
-            JOIN users u ON b.user_id = u.id
-            JOIN rooms r ON b.room_id = r.id
-            JOIN hotels h ON r.hotel_id = h.id
-            ORDER BY b.id DESC
-            LIMIT 5
-        """)
-        
-        recent_bookings = [dict(
-            id=row[0],
-            username=row[1],
-            hotel=row[2],
-            room=row[3],
-            checkin=row[4],
-            checkout=row[5]
-        ) for row in c.fetchall()]
-    
-    return render_template('admin_reports.html', 
-                          total_hotels=total_hotels,
-                          total_rooms=total_rooms,
-                          total_bookings=total_bookings,
-                          total_users=total_users,
-                          hotel_stats=hotel_stats,
-                          recent_bookings=recent_bookings)
 @app.route('/payment-success')
 def payment_success():
     return "✅ Payment successful!"
