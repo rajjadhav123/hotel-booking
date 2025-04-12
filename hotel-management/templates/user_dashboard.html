@@ -2,278 +2,115 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hotel Booking</title>
+  <title>Hotels</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>
-    body {
-      background-color: #f8f9fa;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    .navbar {
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      background-color: white;
-    }
-    
-    .navbar-brand {
-      font-weight: 600;
-      font-size: 1.5rem;
-    }
-    
-    .card {
-      border-radius: 8px;
-      border: none;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      margin-bottom: 20px;
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 20px rgba(0,0,0,0.1);
-    }
-    
-    .card-img-top {
-      height: 220px;
-      object-fit: cover;
-      border-top-left-radius: 8px;
-      border-top-right-radius: 8px;
-    }
-    
-    .btn-primary {
-      background-color: #0056b3;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 16px;
-      font-weight: 500;
-    }
-    
-    .btn-primary:hover {
-      background-color: #003d82;
-    }
-    
-    .btn-outline-secondary {
-      border-color: #dee2e6;
-      color: #495057;
-    }
-    
-    .section-title {
-      font-weight: 600;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #e9ecef;
-    }
-    
-    .filter-card {
-      background-color: white;
-      padding: 20px;
-    }
-    
-    .filter-title {
-      color: #0056b3;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    
-    .filter-section {
-      margin-bottom: 20px;
-    }
-    
-    .filter-label {
-      font-weight: 500;
-      margin-bottom: 10px;
-      color: #343a40;
-    }
-    
-    .form-select {
-      border: 1px solid #dee2e6;
-      padding: 10px;
-      border-radius: 4px;
-    }
-    
-    .search-container {
-      position: relative;
-      margin-bottom: 30px;
-    }
-    
-    .search-icon {
-      position: absolute;
-      left: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6c757d;
-    }
-    
-    .search-input {
-      padding-left: 40px;
-      height: 50px;
-      border-radius: 25px;
-      border: 1px solid #dee2e6;
-      width: 100%;
-    }
-    
-    .hotel-location {
-      color: #6c757d;
-      margin-bottom: 15px;
-    }
-    
-    .footer {
-      background-color: #343a40;
-      color: white;
-      padding: 40px 0 20px;
-      margin-top: 60px;
-    }
-    
-    .footer-title {
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-    
-    .footer-links {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .footer-links li {
-      margin-bottom: 10px;
-    }
-    
-    .footer-links a {
-      color: #e9ecef;
-      text-decoration: none;
-    }
-    
-    .footer-links a:hover {
-      color: white;
-      text-decoration: underline;
-    }
-    
-    .social-icons {
-      display: flex;
-      gap: 15px;
-      margin-top: 20px;
-    }
-    
-    .social-icons a {
-      color: white;
-      font-size: 1.2rem;
-    }
-    
-    .copyright {
-      text-align: center;
-      padding-top: 20px;
-      margin-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      color: #adb5bd;
-    }
-    
-    @media (max-width: 768px) {
-      .filter-card {
-        margin-bottom: 20px;
-      }
-    }
-  </style>
 </head>
-
 <body>
-  <!-- Navigation Bar -->
-  <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
     <div class="container">
-      <a class="navbar-brand" href="#">
-        <i class="fas fa-hotel me-2"></i>Hotel Booking
-      </a>
+      <a class="navbar-brand" href="#">Hotel Booking</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
+        <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link active" href="#"><i class="fas fa-home me-1"></i> Home</a>
+            <a class="nav-link active" href="#">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#"><i class="fas fa-calendar-check me-1"></i> My Bookings</a>
+            <a class="nav-link" href="#">My Bookings</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#"><i class="fas fa-envelope me-1"></i> Contact</a>
-          </li>
-          <li class="nav-item">
-            <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary ms-2">
-              <i class="fas fa-sign-out-alt me-1"></i> Log Out
-            </a>
+            <a class="nav-link" href="#">Favorites</a>
           </li>
         </ul>
+        <div class="d-flex">
+          <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary">Log Out</a>
+        </div>
       </div>
     </div>
   </nav>
 
-  <!-- Main Content -->
-  <div class="container py-4">
-    <div class="row">
-      <div class="col-12 mb-4">
-        <div class="search-container">
-          <i class="fas fa-search search-icon"></i>
-          <input type="text" class="form-control search-input" placeholder="Find Your Perfect Stay" id="searchHotels">
+  <div class="container">
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <h3>Available Hotels</h3>
+      </div>
+      <div class="col-md-4">
+        <div class="input-group">
+          <input type="text" class="form-control" placeholder="Search hotels..." id="searchHotels">
+          <button class="btn btn-outline-secondary" type="button"><i class="fas fa-search"></i></button>
         </div>
       </div>
     </div>
 
     <div class="row">
-      <!-- Filters Sidebar -->
-      <div class="col-lg-3">
-        <div class="card filter-card">
-          <div class="filter-title">
-            <i class="fas fa-filter me-2"></i> Filters
+      <div class="col-md-3 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h5>Filter Options</h5>
           </div>
-          
-          <div class="filter-section">
-            <div class="filter-label">Location</div>
-            <select class="form-select" id="locationFilter">
-              <option value="all">All Locations</option>
-              <option value="Mumbai">Mumbai</option>
-              <option value="Delhi">Delhi</option>
-              <option value="Nashik">Nashik</option>
-              <option value="Jaipur">Jaipur</option>
-              <option value="Andheri">Andheri</option>
-            </select>
-          </div>
-          
-          <div class="filter-section">
-            <div class="filter-label">Sort By</div>
-            <select class="form-select" id="sortOption">
-              <option value="recommended">Recommended</option>
-              <option value="az">Name (A-Z)</option>
-              <option value="za">Name (Z-A)</option>
-            </select>
+          <div class="card-body">
+            <h6>Price Range</h6>
+            <input type="range" class="form-range" min="0" max="10000" step="500">
+            <div class="d-flex justify-content-between">
+              <span>₹0</span>
+              <span>₹10,000+</span>
+            </div>
+            
+            <hr>
+            
+            <h6>Location</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="mumbai">
+              <label class="form-check-label" for="mumbai">Mumbai</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="delhi">
+              <label class="form-check-label" for="delhi">Delhi</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="nashik">
+              <label class="form-check-label" for="nashik">Nashik</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="jaipur">
+              <label class="form-check-label" for="jaipur">Jaipur</label>
+            </div>
+            
+            <hr>
+            
+            <h6>Amenities</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="pool">
+              <label class="form-check-label" for="pool">Swimming Pool</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="wifi">
+              <label class="form-check-label" for="wifi">Free WiFi</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="breakfast">
+              <label class="form-check-label" for="breakfast">Breakfast Included</label>
+            </div>
           </div>
         </div>
       </div>
-      
-      <!-- Hotel Listings -->
-      <div class="col-lg-9">
-        <h2 class="section-title">
-          <i class="fas fa-building me-2"></i>Available Hotels
-        </h2>
-        
-        <div class="row" id="hotelContainer">
+
+      <div class="col-md-9">
+        <div class="row">
           {% for hotel in hotels %}
-          <div class="col-md-6 col-lg-4 hotel-item" data-location="{{ hotel['location'] }}">
-            <div class="card">
-              <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="{{ hotel['name'] }}">
+          <div class="col-md-4">
+            <div class="card mb-4 hotel-card">
+              <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="Hotel Image">
               <div class="card-body">
                 <h5 class="card-title">{{ hotel['name'] }}</h5>
-                <p class="hotel-location">
-                  <i class="fas fa-map-marker-alt me-2"></i>{{ hotel['location'] }}
-                </p>
+                <p class="card-text"><i class="fas fa-map-marker-alt"></i> {{ hotel['location'] }}</p>
                 <div class="d-flex justify-content-between align-items-center">
-                  <a href="/hotel/{{ hotel['id'] }}" class="btn btn-primary">
-                    <i class="fas fa-door-open me-2"></i>View Rooms
-                  </a>
-                  <a href="#" class="text-danger"><i class="far fa-heart"></i></a>
+                  <a href="/hotel/{{ hotel['id'] }}" class="btn btn-primary">View Rooms</a>
+                  <button class="btn btn-outline-danger btn-sm"><i class="far fa-heart"></i></button>
                 </div>
               </div>
             </div>
@@ -282,106 +119,101 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
+    <div class="row mt-4 mb-5">
+      <div class="col-12">
+        <h4>Recommended Destinations</h4>
+        <div class="row">
+          <div class="col-md-3">
+            <div class="card">
+              <img src="{{ url_for('static', filename='images/destination-goa.jpg') }}" class="card-img-top" alt="Goa">
+              <div class="card-body text-center">
+                <h5>Goa</h5>
+                <p>Beach Paradise</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card">
+              <img src="{{ url_for('static', filename='images/destination-manali.jpg') }}" class="card-img-top" alt="Manali">
+              <div class="card-body text-center">
+                <h5>Manali</h5>
+                <p>Mountain Retreat</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card">
+              <img src="{{ url_for('static', filename='images/destination-udaipur.jpg') }}" class="card-img-top" alt="Udaipur">
+              <div class="card-body text-center">
+                <h5>Udaipur</h5>
+                <p>City of Lakes</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card">
+              <img src="{{ url_for('static', filename='images/destination-kerala.jpg') }}" class="card-img-top" alt="Kerala">
+              <div class="card-body text-center">
+                <h5>Kerala</h5>
+                <p>God's Own Country</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bg-light p-4 mt-5">
       <div class="row">
-        <div class="col-md-4 mb-4">
-          <h5 class="footer-title"><i class="fas fa-hotel me-2"></i>Hotel Booking</h5>
-          <p>Find the perfect accommodation for your next trip with our easy-to-use hotel booking platform.</p>
+        <div class="col-md-4">
+          <h5>About Us</h5>
+          <p>We provide the best hotel booking experience with exclusive deals and offers.</p>
+        </div>
+        <div class="col-md-4">
+          <h5>Quick Links</h5>
+          <ul class="list-unstyled">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">FAQ</a></li>
+            <li><a href="#">Terms & Conditions</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5>Contact Us</h5>
+          <address>
+            <i class="fas fa-envelope"></i> support@hotelbooking.com<br>
+            <i class="fas fa-phone"></i> +91 123 456 7890
+          </address>
           <div class="social-icons">
             <a href="#"><i class="fab fa-facebook"></i></a>
             <a href="#"><i class="fab fa-twitter"></i></a>
             <a href="#"><i class="fab fa-instagram"></i></a>
           </div>
         </div>
-        
-        <div class="col-md-4 mb-4">
-          <h5 class="footer-title"><i class="fas fa-link me-2"></i>Quick Links</h5>
-          <ul class="footer-links">
-            <li><a href="#">Home</a></li>
-            <li><a href="#">My Bookings</a></li>
-            <li><a href="#">Terms & Conditions</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">FAQ</a></li>
-          </ul>
-        </div>
-        
-        <div class="col-md-4 mb-4">
-          <h5 class="footer-title"><i class="fas fa-envelope me-2"></i>Contact Us</h5>
-          <address>
-            <p><i class="fas fa-map-marker-alt me-2"></i>123 Main Street, Mumbai, India</p>
-            <p><i class="fas fa-phone me-2"></i>+91 123 456 7890</p>
-            <p><i class="fas fa-envelope me-2"></i>support@hotelbooking.com</p>
-          </address>
-        </div>
       </div>
-      
-      <div class="copyright">
-        &copy; 2025 Hotel Booking. All rights reserved.
+      <div class="text-center mt-3">
+        <p>&copy; 2025 Hotel Booking. All rights reserved.</p>
       </div>
-    </div>
-  </footer>
+    </footer>
+  </div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Search functionality
+    // Basic search functionality
     document.getElementById('searchHotels').addEventListener('keyup', function() {
       const searchText = this.value.toLowerCase();
-      const hotelItems = document.querySelectorAll('.hotel-item');
+      const hotels = document.querySelectorAll('.hotel-card');
       
-      hotelItems.forEach(item => {
-        const hotelName = item.querySelector('.card-title').textContent.toLowerCase();
-        const hotelLocation = item.querySelector('.hotel-location').textContent.toLowerCase();
+      hotels.forEach(hotel => {
+        const title = hotel.querySelector('.card-title').textContent.toLowerCase();
+        const location = hotel.querySelector('.card-text').textContent.toLowerCase();
         
-        if (hotelName.includes(searchText) || hotelLocation.includes(searchText)) {
-          item.style.display = '';
+        if (title.includes(searchText) || location.includes(searchText)) {
+          hotel.parentElement.style.display = '';
         } else {
-          item.style.display = 'none';
+          hotel.parentElement.style.display = 'none';
         }
-      });
-    });
-    
-    // Location filter
-    document.getElementById('locationFilter').addEventListener('change', function() {
-      const selectedLocation = this.value;
-      const hotelItems = document.querySelectorAll('.hotel-item');
-      
-      hotelItems.forEach(item => {
-        if (selectedLocation === 'all' || item.getAttribute('data-location') === selectedLocation) {
-          item.style.display = '';
-        } else {
-          item.style.display = 'none';
-        }
-      });
-    });
-    
-    // Sorting functionality
-    document.getElementById('sortOption').addEventListener('change', function() {
-      const sortOption = this.value;
-      const hotelContainer = document.getElementById('hotelContainer');
-      const hotelItems = Array.from(document.querySelectorAll('.hotel-item'));
-      
-      hotelItems.sort((a, b) => {
-        const nameA = a.querySelector('.card-title').textContent;
-        const nameB = b.querySelector('.card-title').textContent;
-        
-        if (sortOption === 'az') {
-          return nameA.localeCompare(nameB);
-        } else if (sortOption === 'za') {
-          return nameB.localeCompare(nameA);
-        }
-        
-        return 0; // default for 'recommended'
-      });
-      
-      // Clear container and append sorted items
-      hotelContainer.innerHTML = '';
-      hotelItems.forEach(item => {
-        hotelContainer.appendChild(item);
       });
     });
   </script>
