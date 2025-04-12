@@ -8,7 +8,14 @@
 </head>
 <body>
   <div class="container mt-4">
-<a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary float-end">Log Out</a>
+    <div class="d-flex justify-content-between mb-3">
+      <h3>Welcome, {{ session['username'] }}</h3>
+      <div>
+        <a href="{{ url_for('my_bookings') }}" class="btn btn-info">My Bookings</a>
+        <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary">Log Out</a>
+      </div>
+    </div>
+    
     <h3>Available Hotels</h3>
     <div class="row">
       {% for hotel in hotels %}
@@ -27,4 +34,3 @@
   </div>
 </body>
 </html>
- this is my my curerent code like after user logs in he sees thee screenshot that i have shared earlier

@@ -294,6 +294,7 @@ def confirm_booking():
 def my_bookings():
     if 'user_id' not in session:
         return redirect('/login')
+    
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         c.execute("""
@@ -303,9 +304,16 @@ def my_bookings():
             JOIN hotels h ON r.hotel_id = h.id
             WHERE b.user_id = ?
         """, (session['user_id'],))
-        bookings = [dict(id=row[0], hotel_name=row[1], room_type=row[2], 
-                         checkin=row[3], checkout=row[4]) for row in c.fetchall()]
-    return jsonify(bookings)
+        
+        bookings = [dict(
+            id=row[0], 
+            hotel_name=row[1], 
+            room_type=row[2], 
+            checkin=row[3], 
+            checkout=row[4]
+        ) for row in c.fetchall()]
+    
+    return render_template('my_bookings.html', bookings=bookings)
 
 @app.route('/payment-success')
 def payment_success():
