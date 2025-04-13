@@ -364,8 +364,8 @@ def edit_hotel(hotel_id):
         c.execute("SELECT * FROM hotels WHERE id = ?", (hotel_id,))
         hotel = c.fetchone()
         
-        # Get rooms for this hotel
-        c.execute("SELECT * FROM rooms WHERE hotel_id = ?", (hotel_id,))
+        # Get rooms for this hotel - FIXED QUERY
+        c.execute("SELECT id, room_type, is_booked FROM rooms WHERE hotel_id = ?", (hotel_id,))
         rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
         
     return render_template('edit_hotel.html', 
@@ -379,10 +379,15 @@ def add_room(hotel_id):
     
     room_type = request.form['room_type']
     
+    if not room_type or room_type.strip() == "":
+        room_type = "Standard Room"  # Default room type if empty
+    
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
-        c.execute("INSERT INTO rooms (hotel_id, room_type) VALUES (?, ?)", (hotel_id, room_type))
+        c.execute("INSERT INTO rooms (hotel_id, room_type, is_booked) VALUES (?, ?, 0)", 
+                 (hotel_id, room_type))
         conn.commit()
+        flash("Room added successfully")
     
     return redirect(f'/edit_hotel/{hotel_id}')
 
@@ -394,14 +399,21 @@ def delete_room(room_id, hotel_id):
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         
-        # First check if this room has bookings
-        c.execute("SELECT id FROM bookings WHERE room_id = ?", (room_id,))
-        if c.fetchone():
-            flash("Cannot delete room with active bookings")
+        # First check if this room is booked
+        c.execute("SELECT is_booked FROM rooms WHERE id = ?", (room_id,))
+        room_status = c.fetchone()
+        
+        if room_status and room_status[0] == 1:
+            flash("Cannot delete room that is currently booked")
         else:
-            c.execute("DELETE FROM rooms WHERE id = ?", (room_id,))
-            conn.commit()
-            flash("Room deleted successfully")
+            # Also check bookings table to be safe
+            c.execute("SELECT id FROM bookings WHERE room_id = ?", (room_id,))
+            if c.fetchone():
+                flash("Cannot delete room with active bookings")
+            else:
+                c.execute("DELETE FROM rooms WHERE id = ?", (room_id,))
+                conn.commit()
+                flash("Room deleted successfully")
     
     return redirect(f'/edit_hotel/{hotel_id}')
 @app.route('/admin/cancel_booking/<int:booking_id>', methods=['GET'])
@@ -564,6 +576,7 @@ def view_database():
         data['bookings'] = [dict(row) for row in c.fetchall()]
         
     return render_template('database_view.html', data=data)
+
 @app.route('/payment-success')
 def payment_success():
     return "✅ Payment successful!"
