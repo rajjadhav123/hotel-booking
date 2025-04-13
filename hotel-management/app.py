@@ -4,6 +4,8 @@ import os
 import razorpay
 from dotenv import load_dotenv
 import time
+from datetime import datetime, timedelta
+import json
 
 # Load from .env file in development
 load_dotenv()
@@ -155,7 +157,6 @@ def register():
         except sqlite3.IntegrityError:
             flash("Username already exists")
     return render_template('register.html')
-
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session or session.get('is_admin'):
@@ -165,7 +166,7 @@ def dashboard():
         c.execute("SELECT * FROM hotels")
         hotels = [dict(id=row[0], name=row[1], location=row[2], image_path=row[3]) for row in c.fetchall()]
     return render_template('user_dashboard.html', hotels=hotels)
-
+# Enhance the hotel_detail route to include pricing information
 @app.route('/hotel/<int:hotel_id>', methods=['GET'])
 def hotel_detail(hotel_id):
     if 'user_id' not in session:
@@ -189,14 +190,19 @@ def hotel_detail(hotel_id):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y-%m-%d')
     
+    # For the calendar, get all bookings for the next 60 days
+    today = datetime.now()
+    sixty_days_later = today + timedelta(days=60)
+    
     return render_template(
         'hotel_detail.html', 
         hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2]}, 
         rooms=rooms,
         current_date=current_date,
+        calendar_start=today.strftime('%Y-%m-%d'),
+        calendar_end=sixty_days_later.strftime('%Y-%m-%d'),
         razorpay_key_id=razorpay_key_id
     )
-
 @app.route('/book/<int:room_id>', methods=['POST'])
 def book_room(room_id):
     if 'user_id' not in session:
@@ -862,6 +868,43 @@ def booking_history():
                           bookings=bookings, 
                           total_nights=total_nights,
                           favorite_hotel=favorite_hotel)
+# Add a new route to get room availability data for the calendar
+@app.route('/api/room-availability/<int:hotel_id>', methods=['GET'])
+def room_availability(hotel_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Get all rooms for this hotel
+        c.execute("""
+            SELECT r.id, r.room_type, r.is_booked
+            FROM rooms r
+            WHERE r.hotel_id = ?
+        """, (hotel_id,))
+        
+        rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
+        
+        # Get all bookings for these rooms
+        room_ids = [room['id'] for room in rooms]
+        if room_ids:
+            placeholders = ','.join('?' for _ in room_ids)
+            c.execute(f"""
+                SELECT b.room_id, b.checkin_date, b.checkout_date
+                FROM bookings b
+                WHERE b.room_id IN ({placeholders})
+            """, room_ids)
+            
+            bookings = [dict(room_id=row[0], checkin=row[1], checkout=row[2]) for row in c.fetchall()]
+        else:
+            bookings = []
+    
+    # Format data for calendar
+    for room in rooms:
+        room['bookings'] = [b for b in bookings if b['room_id'] == room['id']]
+    
+    return jsonify(rooms)
 
 @app.route('/payment-success')
 def payment_success():

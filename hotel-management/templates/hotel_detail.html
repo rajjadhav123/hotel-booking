@@ -2,168 +2,381 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Rooms - {{ hotel['name'] }}</title>
+  <title>{{ hotel.name }} - Details</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- FullCalendar CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" />
+  <style>
+    .room-item {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .room-item.booked {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+    .room-item.available {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+    .calendar-container {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .fc-event {
+      cursor: pointer;
+      padding: 2px 5px;
+    }
+    .room-status-indicator {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .available-indicator {
+      background-color: #28a745;
+    }
+    .booked-indicator {
+      background-color: #dc3545;
+    }
+    .view-toggle {
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
   <div class="container mt-4">
-    <div class="d-flex justify-content-between mb-3">
-      <div>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Hotels</a>
-      </div>
-      <div>
-        <a href="{{ url_for('my_bookings') }}" class="btn btn-info">My Bookings</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Log Out</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mb-3">← Back to Hotels</a>
+    
+    <div class="row">
+      <div class="col-md-8">
+        <h2>{{ hotel.name }}</h2>
+        <p class="lead">Location: {{ hotel.location }}</p>
       </div>
     </div>
-    
-    <h3>{{ hotel['name'] }} - Rooms</h3>
-    <p>{{ hotel['location'] }}</p>
-    <div class="row">
+
+    <div class="view-toggle">
+      <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary active" id="list-view-btn">List View</button>
+        <button type="button" class="btn btn-outline-primary" id="calendar-view-btn">Calendar View</button>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div id="list-container">
+      <h4>Available Rooms</h4>
       {% for room in rooms %}
-      <div class="col-md-6">
-        <div class="card mb-3">
-          <div class="card-body">
-            <h5 class="card-title">{{ room.room_type }}</h5>
-            {% if room.is_booked %}
-              <p class="text-danger">Already Booked</p>
+      <div class="room-item {% if room.is_booked %}booked{% else %}available{% endif %}">
+        <div class="row">
+          <div class="col-md-8">
+            <h5>{{ room.room_type }}</h5>
+            <p class="mb-1">
+              Status: 
+              {% if room.is_booked %}
+              <span class="badge bg-danger">Booked</span>
+              {% else %}
+              <span class="badge bg-success">Available</span>
+              {% endif %}
+            </p>
+          </div>
+          <div class="col-md-4 text-end">
+            {% if not room.is_booked %}
+            <button type="button" class="btn btn-primary book-room-btn" data-room-id="{{ room.id }}" data-bs-toggle="modal" data-bs-target="#bookingModal">
+              Book Now
+            </button>
             {% else %}
-              <form class="payment-form" onsubmit="return false;">
-                <input type="hidden" name="room_id" value="{{ room.id }}">
-                <div class="mb-2">
-                  <label>Check-in Date:</label>
-                  <input type="date" name="checkin_date" class="form-control checkin-date" required min="{{ current_date }}">
-                </div>
-                <div class="mb-2">
-                  <label>Check-out Date:</label>
-                  <input type="date" name="checkout_date" class="form-control checkout-date" required min="{{ current_date }}">
-                </div>
-                <button type="button" class="btn btn-success" onclick="payNow(this)">Book & Pay ₹500</button>
-              </form>
+            <button class="btn btn-secondary" disabled>Not Available</button>
             {% endif %}
           </div>
         </div>
       </div>
       {% endfor %}
     </div>
+
+    <!-- Calendar View -->
+    <div id="calendar-container" class="calendar-container" style="display: none;">
+      <div class="legend mb-3">
+        <span><span class="room-status-indicator available-indicator"></span> Available</span>
+        <span class="ms-3"><span class="room-status-indicator booked-indicator"></span> Booked</span>
+      </div>
+      <div id="room-calendar"></div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="bookingModalLabel">Book Room</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="booking-form" action="" method="post">
+              <input type="hidden" id="room_id" name="room_id">
+              
+              <div class="mb-3">
+                <label for="checkin_date" class="form-label">Check-in Date</label>
+                <input type="date" class="form-control" id="checkin_date" name="checkin_date" min="{{ current_date }}" required>
+              </div>
+              
+              <div class="mb-3">
+                <label for="checkout_date" class="form-label">Check-out Date</label>
+                <input type="date" class="form-control" id="checkout_date" name="checkout_date" min="{{ current_date }}" required>
+              </div>
+              
+              <div class="mb-3">
+                <h5>Payment Details</h5>
+                <div class="card p-3">
+                  <p class="mb-1">Room: <span id="selected-room-type"></span></p>
+                  <p class="mb-1">Price: ₹1500 per night</p>
+                  <p class="mb-1">Total: ₹<span id="total-price">0</span></p>
+                </div>
+              </div>
+              
+              <button type="button" class="btn btn-primary w-100" id="payment-button">Proceed to Payment</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- Required JavaScript Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const today = new Date().toISOString().split('T')[0];
+    // Room data from Flask
+    const rooms = [
+      {% for room in rooms %}
+      {
+        id: {{ room.id }},
+        roomType: "{{ room.room_type }}",
+        isBooked: {{ room.is_booked|lower }},
+        // Random booking data for demo purposes - in real app, fetch this from database
+        bookings: [
+          {% if room.is_booked %}
+          {
+            start: moment().subtract(Math.floor(Math.random() * 5), 'days').format('YYYY-MM-DD'),
+            end: moment().add(Math.floor(Math.random() * 10) + 1, 'days').format('YYYY-MM-DD')
+          }
+          {% endif %}
+        ]
+      },
+      {% endfor %}
+    ];
 
-      document.querySelectorAll(".checkin-date").forEach(input => {
-        input.min = today;
-        input.addEventListener("change", function () {
-          const checkOutInput = this.closest("form").querySelector(".checkout-date");
-          checkOutInput.min = this.value;
-          if (checkOutInput.value && new Date(checkOutInput.value) <= new Date(this.value)) {
-            checkOutInput.value = '';
+    // Hotel id for API calls
+    const hotelId = {{ hotel.id }};
+    
+    // Price per night - in real app, this would come from the database
+    const pricePerNight = 1500;
+    
+    // Initialize the calendar
+    let calendar;
+    
+    document.getElementById('calendar-view-btn').addEventListener('click', function() {
+      // Switch active button 
+      document.getElementById('list-view-btn').classList.remove('active');
+      this.classList.add('active');
+      
+      // Show calendar, hide list
+      document.getElementById('calendar-container').style.display = 'block';
+      document.getElementById('list-container').style.display = 'none';
+      
+      // Initialize calendar if not already done
+      if (!calendar) {
+        calendar = $('#room-calendar').fullCalendar({
+          header: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'month,agendaWeek'
+          },
+          defaultView: 'month',
+          editable: false,
+          events: generateCalendarEvents(),
+          eventClick: function(calEvent) {
+            if (!calEvent.isBooked) {
+              // If room is available on this date, open booking modal
+              $('#room_id').val(calEvent.roomId);
+              $('#selected-room-type').text(calEvent.title);
+              $('#checkin_date').val(calEvent.start.format('YYYY-MM-DD'));
+              $('#checkout_date').val(moment(calEvent.start).add(1, 'days').format('YYYY-MM-DD'));
+              updateTotalPrice();
+              $('#bookingModal').modal('show');
+            }
           }
         });
+      }
+    });
+    
+    document.getElementById('list-view-btn').addEventListener('click', function() {
+      // Switch active button
+      document.getElementById('calendar-view-btn').classList.remove('active');
+      this.classList.add('active');
+      
+      // Show list, hide calendar
+      document.getElementById('list-container').style.display = 'block';
+      document.getElementById('calendar-container').style.display = 'none';
+    });
+    
+    // Generate calendar events from room data
+    function generateCalendarEvents() {
+      const events = [];
+      
+      // Generate events for the next 60 days
+      const startDate = moment();
+      const endDate = moment().add(60, 'days');
+      
+      rooms.forEach(room => {
+        // For each day in the range
+        let currentDate = startDate.clone();
+        while (currentDate.isSameOrBefore(endDate)) {
+          const dateStr = currentDate.format('YYYY-MM-DD');
+          
+          // Check if room is booked on this date
+          const isBooked = room.bookings.some(booking => {
+            return currentDate.isBetween(booking.start, booking.end, null, '[]');
+          });
+          
+          // Add an event for this room on this day
+          events.push({
+            title: room.roomType,
+            start: dateStr,
+            end: dateStr,
+            roomId: room.id,
+            isBooked: isBooked || room.isBooked,
+            color: isBooked || room.isBooked ? '#dc3545' : '#28a745',
+            textColor: '#fff'
+          });
+          
+          currentDate.add(1, 'days');
+        }
       });
-
-      document.querySelectorAll(".checkout-date").forEach(input => {
-        input.min = today;
+      
+      return events;
+    }
+    
+    // Setup booking process
+    document.querySelectorAll('.book-room-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const roomId = this.getAttribute('data-room-id');
+        const roomType = this.closest('.room-item').querySelector('h5').textContent;
+        
+        // Set form values
+        document.getElementById('room_id').value = roomId;
+        document.getElementById('selected-room-type').textContent = roomType;
       });
     });
-
-    function payNow(button) {
-      try {
-        const form = button.closest('form');
-        const roomId = form.querySelector('[name="room_id"]').value;
-        const checkin = form.querySelector('[name="checkin_date"]').value;
-        const checkout = form.querySelector('[name="checkout_date"]').value;
+    
+    // Update total price when dates change
+    document.getElementById('checkin_date').addEventListener('change', updateTotalPrice);
+    document.getElementById('checkout_date').addEventListener('change', updateTotalPrice);
+    
+    function updateTotalPrice() {
+      const checkinDate = document.getElementById('checkin_date').value;
+      const checkoutDate = document.getElementById('checkout_date').value;
+      
+      if (checkinDate && checkoutDate) {
+        const start = moment(checkinDate);
+        const end = moment(checkoutDate);
+        const nights = end.diff(start, 'days');
         
-        // Validate dates
-        if (!checkin || !checkout) {
-          alert("Please select both check-in and check-out dates");
-          return;
+        if (nights > 0) {
+          const totalPrice = nights * pricePerNight;
+          document.getElementById('total-price').textContent = totalPrice;
+          return totalPrice;
         }
-        
-        if (new Date(checkout) <= new Date(checkin)) {
-          alert("Check-out date must be after check-in date");
-          return;
-        }
-
-        console.log("Creating payment order for room:", roomId);
-        
-        fetch("{{ url_for('create_order') }}", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: 500 })  // ₹500 in INR
-        })
-        .then(res => {
-          if (!res.ok) {
-            return res.json().then(data => {
-              throw new Error(data.error || "Server responded with an error");
-            });
-          }
-          return res.json();
-        })
-        .then(order => {
-          console.log("Order created:", order);
-          const options = {
-            key: "{{ razorpay_key_id }}", // from Flask template
-            amount: order.amount,
-            currency: "INR",
-            name: "Hotel Booking",
-            description: "Room Booking",
-            order_id: order.id,
-            handler: function (response) {
-              console.log("Payment successful:", response);
-              // Payment success → call /confirm-booking
-              fetch("{{ url_for('confirm_booking') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  room_id: roomId,
-                  checkin_date: checkin,
-                  checkout_date: checkout,
-                  payment_id: response.razorpay_payment_id,
-                  order_id: response.razorpay_order_id,
-                  signature: response.razorpay_signature
-                })
-              })
-              .then(res => {
-                if (!res.ok) {
-                  return res.json().then(data => {
-                    throw new Error(data.error || "Server responded with an error");
-                  });
-                }
-                return res.json();
-              })
-              .then(data => {
-                if (data.message) {
-                  alert("✅ Booking Confirmed!");
-                  window.location.href = "{{ url_for('dashboard') }}";
-                } else {
-                  alert("⚠️ Booking failed: " + data.error);
-                }
-              })
-              .catch(err => {
-                console.error("Booking confirmation error:", err);
-                alert("⚠️ Error processing booking: " + err.message);
-              });
-            },
-            theme: {
-              color: "#3399cc"
-            }
-          };
-          const rzp = new Razorpay(options);
-          rzp.open();
-        })
-        .catch(err => {
-          console.error("Payment order creation error:", err);
-          alert("⚠️ Error creating payment order: " + err.message);
-        });
-      } catch (err) {
-        console.error("JavaScript error:", err);
-        alert("⚠️ An unexpected error occurred: " + err.message);
       }
+      
+      document.getElementById('total-price').textContent = '0';
+      return 0;
     }
+    
+    // Handle payment button click
+    document.getElementById('payment-button').addEventListener('click', function() {
+      const roomId = document.getElementById('room_id').value;
+      const checkinDate = document.getElementById('checkin_date').value;
+      const checkoutDate = document.getElementById('checkout_date').value;
+      const totalPrice = updateTotalPrice();
+      
+      if (!roomId || !checkinDate || !checkoutDate || totalPrice <= 0) {
+        alert('Please select valid dates');
+        return;
+      }
+      
+      // Create Razorpay order
+      fetch('/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: totalPrice
+        })
+      })
+      .then(response => response.json())
+      .then(order => {
+        if (order.error) {
+          alert('Error: ' + order.error);
+          return;
+        }
+        
+        // Initialize Razorpay
+        const options = {
+          key: '{{ razorpay_key_id }}',
+          amount: order.amount,
+          currency: order.currency,
+          name: '{{ hotel.name }}',
+          description: 'Room Booking',
+          order_id: order.id,
+          handler: function(response) {
+            // On successful payment, confirm the booking
+            fetch('/confirm-booking', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                room_id: roomId,
+                checkin_date: checkinDate,
+                checkout_date: checkoutDate,
+                payment_id: response.razorpay_payment_id
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.error) {
+                alert('Error: ' + data.error);
+              } else {
+                // Redirect to success page
+                window.location.href = "/my-bookings";
+              }
+            });
+          },
+          prefill: {
+            name: '{{ session.username }}',
+          },
+          theme: {
+            color: '#3399cc'
+          }
+        };
+        
+        const rzp = new Razorpay(options);
+        rzp.open();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Payment initialization failed');
+      });
+    });
   </script>
 </body>
 </html>
