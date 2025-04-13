@@ -5,296 +5,171 @@
   <title>Hotel Booking - Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
-    .hero-section {
-      background-color: #f8f9fa;
-      padding: 40px 0;
-      margin-bottom: 30px;
-      border-radius: 10px;
+    .card {
+      transition: box-shadow 0.3s;
     }
-    .hotel-card {
-      transition: transform 0.3s;
-      height: 100%;
-    }
-    .hotel-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    }
-    .card-img-container {
-      height: 200px;
-      overflow: hidden;
+    .card:hover {
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     .card-img-top {
-      height: 100%;
+      height: 180px;
       object-fit: cover;
-    }
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: #007bff;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-    .search-section {
-      background-color: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-    .booking-stats {
-      background-color: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
     }
   </style>
 </head>
-<body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
     <div class="container">
-      <a class="navbar-brand" href="#">
-        <i class="fas fa-hotel me-2"></i>HotelBooker
-      </a>
+      <a class="navbar-brand" href="#">Hotel Booking</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link active" href="#">
-              <i class="fas fa-home me-1"></i>Home
-            </a>
+            <a class="nav-link active" href="#">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('my_bookings') }}">
-              <i class="fas fa-calendar-check me-1"></i>My Bookings
-            </a>
+            <a class="nav-link" href="{{ url_for('my_bookings') }}">My Bookings</a>
           </li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-              <div class="user-avatar d-inline-block me-1">{{ session['username'][0].upper() }}</div>
-              {{ session['username'] }}
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="#" id="profileLink"><i class="fas fa-user me-2"></i>My Profile</a></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="https://hotel-booking-xq6q.onrender.com/logout"><i class="fas fa-sign-out-alt me-2"></i>Log Out</a></li>
-            </ul>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="profileLink">Profile</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="https://hotel-booking-xq6q.onrender.com/logout">Logout</a>
           </li>
         </ul>
       </div>
     </div>
   </nav>
 
-  <!-- Main Content -->
-  <div class="container mt-4">
-    <!-- Hero Section -->
-    <div class="hero-section p-4 bg-light">
-      <div class="row align-items-center">
-        <div class="col-md-7">
-          <h1>Welcome, {{ session['username'] }}!</h1>
-          <p class="lead">Find and book your perfect stay with ease.</p>
-        </div>
-        <div class="col-md-5">
-          <div class="booking-stats p-3 text-center">
-            <div class="row">
-              <div class="col-6">
-                <h3 id="activeBookings">0</h3>
-                <p class="mb-0">Active Bookings</p>
-              </div>
-              <div class="col-6">
-                <h3 id="savedHotels">0</h3>
-                <p class="mb-0">Saved Hotels</p>
-              </div>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3>Welcome, {{ session['username'] }}</h3>
+      <div>
+        <span class="badge bg-primary me-2">Active Bookings: <span id="bookingCount">0</span></span>
+        <a href="{{ url_for('my_bookings') }}" class="btn btn-outline-primary btn-sm">View Bookings</a>
+      </div>
+    </div>
+    
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="input-group">
+              <input type="text" id="searchHotel" class="form-control" placeholder="Search hotels...">
+              <button class="btn btn-outline-secondary" type="button" id="searchBtn">Search</button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Search and Filter Section -->
-    <div class="search-section">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input type="text" id="searchHotel" class="form-control" placeholder="Search hotels...">
+          <div class="col-md-4">
+            <select id="locationFilter" class="form-select">
+              <option value="">All Locations</option>
+              {% set locations = [] %}
+              {% for hotel in hotels %}
+                {% if hotel['location'] not in locations %}
+                  {% set _ = locations.append(hotel['location']) %}
+                  <option value="{{ hotel['location'] }}">{{ hotel['location'] }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button id="clearFilters" class="btn btn-outline-secondary w-100">Reset</button>
           </div>
         </div>
-        <div class="col-md-3">
-          <select id="locationFilter" class="form-select">
-            <option value="">All Locations</option>
-            {% set locations = [] %}
-            {% for hotel in hotels %}
-              {% if hotel['location'] not in locations %}
-                {% set _ = locations.append(hotel['location']) %}
-                <option value="{{ hotel['location'] }}">{{ hotel['location'] }}</option>
-              {% endif %}
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select id="sortOptions" class="form-select">
-            <option value="name">Sort by Name</option>
-            <option value="location">Sort by Location</option>
-            <option value="popularity">Sort by Popularity</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button id="clearFilters" class="btn btn-outline-secondary w-100">
-            <i class="fas fa-undo me-1"></i>Reset
-          </button>
-        </div>
       </div>
     </div>
     
-    <!-- Hotels Grid -->
-    <h3 class="mb-3"><i class="fas fa-building me-2"></i>Available Hotels <span id="hotelCount" class="badge bg-secondary">{{ hotels|length }}</span></h3>
+    <h4 class="mb-3">Available Hotels <span id="hotelCount" class="badge bg-secondary">{{ hotels|length }}</span></h4>
+    
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="hotelsContainer">
       {% for hotel in hotels %}
       <div class="col hotel-item" data-location="{{ hotel['location'] }}">
-        <div class="card hotel-card h-100">
-          <div class="card-img-container">
-            <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="Hotel Image">
-          </div>
+        <div class="card h-100">
+          <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="Hotel Image">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
-              <h5 class="card-title">{{ hotel['name'] }}</h5>
-              <button class="btn btn-sm btn-outline-danger favorite-btn" data-hotel-id="{{ hotel['id'] }}">
-                <i class="far fa-heart"></i>
-              </button>
-            </div>
-            <p class="card-text mb-2">
-              <i class="fas fa-map-marker-alt text-danger me-1"></i>{{ hotel['location'] }}
-            </p>
-            <p class="card-text mb-3">
-              <span class="badge bg-success me-1">4.5 <i class="fas fa-star"></i></span>
-              <small class="text-muted">(125 reviews)</small>
-            </p>
-            <div class="d-flex justify-content-between align-items-center">
-              <a href="/hotel/{{ hotel['id'] }}" class="btn btn-primary">
-                <i class="fas fa-search me-1"></i>View Rooms
-              </a>
-              <span class="text-success fw-bold">Available</span>
-            </div>
+            <h5 class="card-title">{{ hotel['name'] }}</h5>
+            <p class="card-text">Location: {{ hotel['location'] }}</p>
+            <a href="/hotel/{{ hotel['id'] }}" class="btn btn-primary">View Rooms</a>
           </div>
         </div>
       </div>
       {% endfor %}
     </div>
+  </div>
 
-    <!-- Profile Modal -->
-    <div class="modal fade" id="profileModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title">My Profile</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="text-center mb-4">
-              <div class="user-avatar mx-auto mb-3" style="width: 80px; height: 80px; font-size: 32px;">
-                {{ session['username'][0].upper() }}
-              </div>
-              <h4>{{ session['username'] }}</h4>
+  <!-- Profile Modal -->
+  <div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">My Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="profileForm" action="/user/profile" method="POST">
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-control" name="username" value="{{ session['username'] }}" readonly>
             </div>
-            
-            <form id="profileForm">
-              <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input type="text" class="form-control" value="{{ session['username'] }}" readonly>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control" id="userEmail">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Contact Number</label>
-                <input type="tel" class="form-control" id="userPhone">
-              </div>
-              <div class="d-grid">
-                <button type="button" class="btn btn-primary" id="saveProfileBtn">
-                  <i class="fas fa-save me-1"></i>Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" id="userEmail">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-control" name="phone" id="userPhone">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Age</label>
+              <input type="number" class="form-control" name="age" id="userAge">
+            </div>
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="bg-dark text-white py-4 mt-5">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6">
-          <h5>HotelBooker</h5>
-          <p>Find and book your perfect stay with ease.</p>
-        </div>
-        <div class="col-md-3">
-          <h5>Quick Links</h5>
-          <ul class="list-unstyled">
-            <li><a href="#" class="text-white">Home</a></li>
-            <li><a href="{{ url_for('my_bookings') }}" class="text-white">My Bookings</a></li>
-            <li><a href="#" class="text-white">Help</a></li>
-          </ul>
-        </div>
-        <div class="col-md-3">
-          <h5>Contact</h5>
-          <ul class="list-unstyled">
-            <li><i class="fas fa-envelope me-2"></i>support@hotelbook.com</li>
-            <li><i class="fas fa-phone me-2"></i>+1 (123) 456-7890</li>
-          </ul>
-        </div>
-      </div>
-      <hr>
-      <div class="text-center">
-        <p class="mb-0">&copy; 2025 HotelBooker. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Initialize with mock data - these would be populated from your backend
-    document.getElementById('activeBookings').textContent = '2';
-    document.getElementById('savedHotels').textContent = '3';
+    // Load active bookings count
+    fetch('/dashboard/stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('bookingCount').textContent = data.active_bookings;
+      })
+      .catch(error => console.error('Error:', error));
 
-    // Search functionality
-    document.getElementById('searchHotel').addEventListener('input', filterHotels);
-    document.getElementById('locationFilter').addEventListener('change', filterHotels);
-    document.getElementById('sortOptions').addEventListener('change', sortHotels);
-    document.getElementById('clearFilters').addEventListener('click', clearFilters);
-
-    // Profile modal
-    document.getElementById('profileLink').addEventListener('click', function(e) {
+    // Profile modal functionality
+    const profileLink = document.getElementById('profileLink');
+    const profileModal = new bootstrap.Modal(document.getElementById('profileModal'));
+    
+    profileLink.addEventListener('click', function(e) {
       e.preventDefault();
-      new bootstrap.Modal(document.getElementById('profileModal')).show();
+      
+      // Load user profile data
+      fetch('/user/profile')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('userEmail').value = data.email || '';
+          document.getElementById('userPhone').value = data.phone || '';
+          document.getElementById('userAge').value = data.age || '';
+          profileModal.show();
+        })
+        .catch(error => console.error('Error:', error));
     });
 
-    // Favorite button toggling
-    document.querySelectorAll('.favorite-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const icon = this.querySelector('i');
-        if (icon.classList.contains('far')) {
-          icon.classList.replace('far', 'fas');
-          this.classList.replace('btn-outline-danger', 'btn-danger');
-        } else {
-          icon.classList.replace('fas', 'far');
-          this.classList.replace('btn-danger', 'btn-outline-danger');
-        }
-        // Here you would make an AJAX request to save this preference
-      });
-    });
+    // Search and filter functionality
+    document.getElementById('searchHotel').addEventListener('input', filterHotels);
+    document.getElementById('searchBtn').addEventListener('click', filterHotels);
+    document.getElementById('locationFilter').addEventListener('change', filterHotels);
+    document.getElementById('clearFilters').addEventListener('click', clearFilters);
 
     function filterHotels() {
       const searchText = document.getElementById('searchHotel').value.toLowerCase();
@@ -319,40 +194,11 @@
       document.getElementById('hotelCount').textContent = visibleCount;
     }
 
-    function sortHotels() {
-      const sortValue = document.getElementById('sortOptions').value;
-      const hotelsContainer = document.getElementById('hotelsContainer');
-      const hotels = Array.from(hotelsContainer.querySelectorAll('.hotel-item'));
-      
-      hotels.sort((a, b) => {
-        if (sortValue === 'name') {
-          const nameA = a.querySelector('.card-title').textContent;
-          const nameB = b.querySelector('.card-title').textContent;
-          return nameA.localeCompare(nameB);
-        } else if (sortValue === 'location') {
-          const locationA = a.dataset.location;
-          const locationB = b.dataset.location;
-          return locationA.localeCompare(locationB);
-        }
-        // For 'popularity' we would need real data, this is just a placeholder
-        return 0;
-      });
-      
-      hotels.forEach(hotel => hotelsContainer.appendChild(hotel));
-    }
-
     function clearFilters() {
       document.getElementById('searchHotel').value = '';
       document.getElementById('locationFilter').value = '';
-      document.getElementById('sortOptions').value = 'name';
       filterHotels();
     }
-
-    // Save profile changes
-    document.getElementById('saveProfileBtn').addEventListener('click', function() {
-      // Here you would send an AJAX request to update the profile
-      alert('Profile updated successfully!');
-    });
   </script>
 </body>
 </html>
