@@ -635,6 +635,233 @@ def sync_database():
         flash("Database synchronized successfully")
     
     return redirect('/admin')
+@app.route('/profile', methods=['GET', 'POST'])
+def user_profile():
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    error = None
+    success = None
+    
+    # Get current user info
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("SELECT username, email, age FROM users WHERE id = ?", (session['user_id'],))
+        user = c.fetchone()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'update_profile':
+            email = request.form.get('email').lower()
+            age = request.form.get('age')
+            
+            # Basic validation
+            if not email or not age:
+                error = "All fields are required"
+            else:
+                try:
+                    with sqlite3.connect(DB_PATH) as conn:
+                        c = conn.cursor()
+                        c.execute("UPDATE users SET email = ?, age = ? WHERE id = ?", 
+                                 (email, age, session['user_id']))
+                        conn.commit()
+                        success = "Profile updated successfully"
+                        
+                        # Refresh user data
+                        c.execute("SELECT username, email, age FROM users WHERE id = ?", (session['user_id'],))
+                        user = c.fetchone()
+                except Exception as e:
+                    error = f"Error updating profile: {str(e)}"
+        
+        elif action == 'change_password':
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            if not current_password or not new_password or not confirm_password:
+                error = "All password fields are required"
+            elif new_password != confirm_password:
+                error = "New passwords do not match"
+            else:
+                # Verify current password
+                with sqlite3.connect(DB_PATH) as conn:
+                    c = conn.cursor()
+                    c.execute("SELECT id FROM users WHERE id = ? AND password = ?", 
+                             (session['user_id'], current_password))
+                    if not c.fetchone():
+                        error = "Current password is incorrect"
+                    else:
+                        # Update password
+                        c.execute("UPDATE users SET password = ? WHERE id = ?", 
+                                 (new_password, session['user_id']))
+                        conn.commit()
+                        success = "Password changed successfully"
+    
+    # Get booking statistics
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Total bookings
+        c.execute("SELECT COUNT(*) FROM bookings WHERE user_id = ?", (session['user_id'],))
+        total_bookings = c.fetchone()[0]
+        
+        # Get unique hotels booked
+        c.execute("""
+            SELECT COUNT(DISTINCT h.id) 
+            FROM bookings b
+            JOIN rooms r ON b.room_id = r.id
+            JOIN hotels h ON r.hotel_id = h.id
+            WHERE b.user_id = ?
+        """, (session['user_id'],))
+        unique_hotels = c.fetchone()[0]
+        
+        # Get upcoming bookings
+        from datetime import datetime
+        today = datetime.now().strftime('%Y-%m-%d')
+        c.execute("""
+            SELECT COUNT(*) 
+            FROM bookings 
+            WHERE user_id = ? AND checkout_date >= ?
+        """, (session['user_id'], today))
+        upcoming_bookings = c.fetchone()[0]
+    
+    stats = {
+        'total': total_bookings,
+        'unique_hotels': unique_hotels,
+        'upcoming': upcoming_bookings
+    }
+    
+    return render_template('user_profile.html', 
+                          user=dict(username=user[0], email=user[1], age=user[2]),
+                          stats=stats,
+                          error=error,
+                          success=success)
+
+@app.route('/booking/cancel/<int:booking_id>', methods=['POST'])
+def cancel_booking(booking_id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Verify the booking belongs to this user
+        c.execute("SELECT room_id FROM bookings WHERE id = ? AND user_id = ?", 
+                 (booking_id, session['user_id']))
+        result = c.fetchone()
+        
+        if result:
+            room_id = result[0]
+            
+            # Delete the booking
+            c.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+            
+            # Make the room available again
+            c.execute("UPDATE rooms SET is_booked = 0 WHERE id = ?", (room_id,))
+            
+            conn.commit()
+            flash("Booking successfully canceled")
+        else:
+            flash("Booking not found or you don't have permission to cancel it")
+    
+    return redirect('/my-bookings')
+
+@app.route('/booking/modify/<int:booking_id>', methods=['GET', 'POST'])
+def modify_booking(booking_id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    # Get booking details
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("""
+            SELECT b.id, h.id, h.name, r.id, r.room_type, b.checkin_date, b.checkout_date
+            FROM bookings b
+            JOIN rooms r ON b.room_id = r.id
+            JOIN hotels h ON r.hotel_id = h.id
+            WHERE b.id = ? AND b.user_id = ?
+        """, (booking_id, session['user_id']))
+        
+        booking = c.fetchone()
+        
+        if not booking:
+            flash("Booking not found or you don't have permission to modify it")
+            return redirect('/my-bookings')
+        
+        if request.method == 'POST':
+            new_checkin = request.form.get('checkin_date')
+            new_checkout = request.form.get('checkout_date')
+            
+            if not new_checkin or not new_checkout:
+                flash("Both check-in and check-out dates are required")
+                return redirect(f'/booking/modify/{booking_id}')
+            
+            # Update booking dates
+            c.execute("""
+                UPDATE bookings 
+                SET checkin_date = ?, checkout_date = ?
+                WHERE id = ? AND user_id = ?
+            """, (new_checkin, new_checkout, booking_id, session['user_id']))
+            
+            conn.commit()
+            flash("Booking dates updated successfully")
+            return redirect('/my-bookings')
+    
+    booking_data = {
+        'id': booking[0],
+        'hotel_id': booking[1],
+        'hotel_name': booking[2],
+        'room_id': booking[3],
+        'room_type': booking[4],
+        'checkin': booking[5],
+        'checkout': booking[6]
+    }
+    
+    return render_template('modify_booking.html', booking=booking_data)
+
+@app.route('/booking-history')
+def booking_history():
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("""
+            SELECT b.id, h.name, r.room_type, b.checkin_date, b.checkout_date,
+                   (julianday(b.checkout_date) - julianday(b.checkin_date)) as stay_length
+            FROM bookings b
+            JOIN rooms r ON b.room_id = r.id
+            JOIN hotels h ON r.hotel_id = h.id
+            WHERE b.user_id = ?
+            ORDER BY b.checkin_date DESC
+        """, (session['user_id'],))
+        
+        bookings = [dict(
+            id=row[0], 
+            hotel_name=row[1], 
+            room_type=row[2], 
+            checkin=row[3], 
+            checkout=row[4],
+            stay_length=int(row[5])
+        ) for row in c.fetchall()]
+        
+        # Calculate stats
+        total_nights = sum(booking['stay_length'] for booking in bookings)
+        most_visited = {}
+        if bookings:
+            for booking in bookings:
+                hotel = booking['hotel_name']
+                most_visited[hotel] = most_visited.get(hotel, 0) + 1
+            
+            favorite_hotel = max(most_visited.items(), key=lambda x: x[1])[0]
+        else:
+            favorite_hotel = None
+    
+    return render_template('booking_history.html', 
+                          bookings=bookings, 
+                          total_nights=total_nights,
+                          favorite_hotel=favorite_hotel)
 
 @app.route('/payment-success')
 def payment_success():
