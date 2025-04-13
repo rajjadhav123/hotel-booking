@@ -130,7 +130,7 @@ def register():
             flash("Username already exists")
     return render_template('register.html')
 
-@app.route('/dashboard')
+"""@app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session or session.get('is_admin'):
         return redirect('/login')
@@ -138,7 +138,7 @@ def dashboard():
         c = conn.cursor()
         c.execute("SELECT * FROM hotels")
         hotels = [dict(id=row[0], name=row[1], location=row[2], image_path=row[3]) for row in c.fetchall()]
-    return render_template('user_dashboard.html', hotels=hotels)
+    return render_template('user_dashboard.html', hotels=hotels) """
 
 @app.route('/hotel/<int:hotel_id>', methods=['GET'])
 def hotel_detail(hotel_id):
