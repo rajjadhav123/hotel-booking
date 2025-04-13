@@ -66,6 +66,32 @@ def init_db():
                         checkout_date TEXT,
                         FOREIGN KEY (user_id) REFERENCES users(id),
                         FOREIGN KEY (room_id) REFERENCES rooms(id))''')
+        c.execute('''CREATE TABLE IF NOT EXISTS reviews (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER,
+                        hotel_id INTEGER,
+                        rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+                        comment TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (hotel_id) REFERENCES hotels(id))''')
+        c.execute('''CREATE TABLE IF NOT EXISTS favorites (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER,
+                        hotel_id INTEGER,
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (hotel_id) REFERENCES hotels(id),
+                        UNIQUE(user_id, hotel_id))''')
+        c.execute('''CREATE TABLE IF NOT EXISTS notifications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER,
+                        message TEXT,
+                        is_read INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id))''')
+
+
+
 
         c.execute("SELECT * FROM users WHERE username = ?", ('admin',))
         if not c.fetchone():
