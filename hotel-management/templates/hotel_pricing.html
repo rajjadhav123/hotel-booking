@@ -1,0 +1,262 @@
+{% extends "admin_layout.html" %}
+
+{% block title %}Pricing Management - {{ hotel_name }}{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <h1>Pricing Management - {{ hotel_name }}</h1>
+        <a href="/admin/dashboard" class="back-button">Back to Dashboard</a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="admin-section">
+        <h2>Room Base Prices</h2>
+        <form action="/admin/hotel/{{ hotel_id }}/pricing" method="post">
+            <input type="hidden" name="action" value="update_room_prices">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Room Type</th>
+                        <th>Max Occupancy</th>
+                        <th>Base Price ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in room_types %}
+                    <tr>
+                        <td>{{ room.name }}</td>
+                        <td>{{ room.max_occupancy }}</td>
+                        <td>
+                            <input type="hidden" name="room_type_id" value="{{ room.id }}">
+                            <input type="number" name="price_{{ room.id }}" value="{{ room.base_price }}" min="0" step="0.01" required>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="form-actions">
+                <button type="submit" class="save-button">Save Base Prices</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="admin-section">
+        <h2>Dynamic Pricing Rules</h2>
+        <div class="pricing-rules">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rule Name</th>
+                        <th>Room Type</th>
+                        <th>Date Range</th>
+                        <th>Days</th>
+                        <th>Adjustment</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in pricing_rules %}
+                    <tr>
+                        <td>{{ rule.rule_name }}</td>
+                        <td>{{ rule.room_type_name }}</td>
+                        <td>
+                            {% if rule.start_date and rule.end_date %}
+                                {{ rule.start_date }} to {{ rule.end_date }}
+                            {% elif rule.start_date %}
+                                From {{ rule.start_date }}
+                            {% elif rule.end_date %}
+                                Until {{ rule.end_date }}
+                            {% else %}
+                                All dates
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rule.day_of_week %}
+                                {% set days = {'1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', '5': 'Fri', '6': 'Sat', '7': 'Sun'} %}
+                                {% for day in rule.day_of_week %}
+                                    {{ days[day] }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                All days
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rule.adjustment_type == 'percentage' %}
+                                {{ rule.adjustment_value }}%
+                            {% else %}
+                                ${{ rule.adjustment_value }}
+                            {% endif %}
+                        </td>
+                        <td>{{ rule.priority }}</td>
+                        <td>{{ 'Active' if rule.is_active else 'Inactive' }}</td>
+                        <td class="actions">
+                            <button class="edit-button" onclick="editRule({{ rule|tojson }})">Edit</button>
+                            <form action="/admin/hotel/{{ hotel_id }}/pricing" method="post" style="display: inline;">
+                                <input type="hidden" name="action" value="delete_pricing_rule">
+                                <input type="hidden" name="rule_id" value="{{ rule.id }}">
+                                <button type="submit" class="delete-button" onclick="return confirm('Are you sure you want to delete this rule?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="add-section">
+            <h3>Add New Pricing Rule</h3>
+            <form id="ruleForm" action="/admin/hotel/{{ hotel_id }}/pricing" method="post">
+                <input type="hidden" name="action" value="add_pricing_rule">
+                <input type="hidden" id="rule_id" name="rule_id" value="">
+                
+                <div class="form-group">
+                    <label for="rule_name">Rule Name:</label>
+                    <input type="text" id="rule_name" name="rule_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="room_type_id">Apply to Room Type:</label>
+                    <select id="room_type_id" name="room_type_id">
+                        <option value="">All Room Types</option>
+                        {% for room in room_types %}
+                            <option value="{{ room.id }}">{{ room.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_date">Start Date (optional):</label>
+                        <input type="date" id="start_date" name="start_date">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="end_date">End Date (optional):</label>
+                        <input type="date" id="end_date" name="end_date">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Days of Week (optional):</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="day_of_week" value="1"> Monday</label>
+                        <label><input type="checkbox" name="day_of_week" value="2"> Tuesday</label>
+                        <label><input type="checkbox" name="day_of_week" value="3"> Wednesday</label>
+                        <label><input type="checkbox" name="day_of_week" value="4"> Thursday</label>
+                        <label><input type="checkbox" name="day_of_week" value="5"> Friday</label>
+                        <label><input type="checkbox" name="day_of_week" value="6"> Saturday</label>
+                        <label><input type="checkbox" name="day_of_week" value="7"> Sunday</label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adjustment_type">Adjustment Type:</label>
+                        <select id="adjustment_type" name="adjustment_type" required>
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed Amount ($)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adjustment_value">Adjustment Value:</label>
+                        <input type="number" id="adjustment_value" name="adjustment_value" step="0.01" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority">Priority:</label>
+                        <input type="number" id="priority" name="priority" value="1" min="1" required>
+                        <span class="hint">Higher number = higher priority</span>
+                    </div>
+                    
+                    <div class="form-group" id="is_active_group" style="display: none;">
+                        <label for="is_active">Status:</label>
+                        <select id="is_active" name="is_active">
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="save-button">Save Rule</button>
+                    <button type="button" id="cancelEdit" style="display: none;" onclick="cancelEdit()">Cancel Edit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editRule(rule) {
+    // Change form action
+    document.getElementById('ruleForm').querySelector('input[name="action"]').value = 'edit_pricing_rule';
+    
+    // Fill in form values
+    document.getElementById('rule_id').value = rule.id;
+    document.getElementById('rule_name').value = rule.rule_name;
+    
+    // Set room type
+    const roomTypeSelect = document.getElementById('room_type_id');
+    roomTypeSelect.value = rule.room_type_id || '';
+    
+    // Set dates
+    document.getElementById('start_date').value = rule.start_date || '';
+    document.getElementById('end_date').value = rule.end_date || '';
+    
+    // Set days of week
+    const dayCheckboxes = document.getElementsByName('day_of_week');
+    dayCheckboxes.forEach(checkbox => {
+        checkbox.checked = rule.day_of_week.includes(checkbox.value);
+    });
+    
+    // Set adjustment type and value
+    document.getElementById('adjustment_type').value = rule.adjustment_type;
+    document.getElementById('adjustment_value').value = rule.adjustment_value;
+    
+    // Set priority
+    document.getElementById('priority').value = rule.priority;
+    
+    // Show active status field and set value
+    document.getElementById('is_active_group').style.display = 'block';
+    document.getElementById('is_active').value = rule.is_active ? '1' : '0';
+    
+    // Show cancel button
+    document.getElementById('cancelEdit').style.display = 'inline-block';
+    
+    // Scroll to form
+    document.querySelector('.add-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit() {
+    // Reset form
+    document.getElementById('ruleForm').reset();
+    
+    // Change form action back to add
+    document.getElementById('ruleForm').querySelector('input[name="action"]').value = 'add_pricing_rule';
+    
+    // Clear hidden rule ID
+    document.getElementById('rule_id').value = '';
+    
+    // Hide active status field
+    document.getElementById('is_active_group').style.display = 'none';
+    
+    // Hide cancel button
+    document.getElementById('cancelEdit').style.display = 'none';
+}
+</script>
+{% endblock %}
