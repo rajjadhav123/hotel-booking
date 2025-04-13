@@ -610,10 +610,10 @@ def sync_database():
     
     return redirect('/admin')
 # User profile page
-@app.route('/user_profile')
+'''@app.route('/user_profile')
 def user_profile():
     # Logic to get user info
-    return render_template('user_profile.html')
+    return render_template('user_profile.html')'''
 
 # Favorites page
 @app.route('/favorites')
