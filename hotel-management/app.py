@@ -75,25 +75,6 @@ def init_db():
             conn.commit()
             print("Admin user created: username='admin', password='admin123'")
         conn.commit()
-c.execute('''CREATE TABLE IF NOT EXISTS ratings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                hotel_id INTEGER,
-                rating INTEGER CHECK(rating BETWEEN 1 AND 5),
-                review TEXT,
-                date_posted TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id),
-                FOREIGN KEY (hotel_id) REFERENCES hotels(id))''')
-c.execute('''CREATE TABLE IF NOT EXISTS offers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT,
-                discount_percent INTEGER CHECK(discount_percent BETWEEN 1 AND 90),
-                start_date TEXT,
-                end_date TEXT,
-                hotel_id INTEGER,
-                FOREIGN KEY (hotel_id) REFERENCES hotels(id))''')
-
 
 @app.route('/')
 def home():
@@ -158,6 +139,7 @@ def dashboard():
         c.execute("SELECT * FROM hotels")
         hotels = [dict(id=row[0], name=row[1], location=row[2], image_path=row[3]) for row in c.fetchall()]
     return render_template('user_dashboard.html', hotels=hotels)
+
 @app.route('/hotel/<int:hotel_id>', methods=['GET'])
 def hotel_detail(hotel_id):
     if 'user_id' not in session:
@@ -178,31 +160,6 @@ def hotel_detail(hotel_id):
         
         rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
         
-        # Get average rating
-        c.execute("SELECT AVG(rating) FROM ratings WHERE hotel_id = ?", (hotel_id,))
-        avg_rating = c.fetchone()[0]
-        if avg_rating:
-            avg_rating = round(avg_rating, 1)
-        else:
-            avg_rating = None
-            
-        # Get active offers for this hotel
-        c.execute("""
-            SELECT id, title, description, discount_percent, end_date
-            FROM offers
-            WHERE hotel_id = ? 
-            AND date('now') BETWEEN start_date AND end_date
-            ORDER BY discount_percent DESC
-        """, (hotel_id,))
-        
-        offers = [dict(
-            id=row[0],
-            title=row[1],
-            description=row[2],
-            discount=row[3],
-            end_date=row[4]
-        ) for row in c.fetchall()]
-        
     from datetime import datetime
     current_date = datetime.now().strftime('%Y-%m-%d')
     
@@ -211,9 +168,7 @@ def hotel_detail(hotel_id):
         hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2]}, 
         rooms=rooms,
         current_date=current_date,
-        razorpay_key_id=razorpay_key_id,
-        avg_rating=avg_rating,
-        offers=offers
+        razorpay_key_id=razorpay_key_id
     )
 
 @app.route('/book/<int:room_id>', methods=['POST'])
@@ -654,232 +609,6 @@ def sync_database():
         flash("Database synchronized successfully")
     
     return redirect('/admin')
-@app.route('/submit_rating/<int:hotel_id>', methods=['POST'])
-def submit_rating(hotel_id):
-    if 'user_id' not in session:
-        return redirect('/login')
-    
-    rating = int(request.form['rating'])
-    review = request.form['review']
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("""
-            INSERT INTO ratings (user_id, hotel_id, rating, review, date_posted)
-            VALUES (?, ?, ?, ?, datetime('now'))
-        """, (session['user_id'], hotel_id, rating, review))
-        conn.commit()
-        flash("Your review has been submitted!")
-    
-    return redirect(f'/hotel/{hotel_id}')
-
-@app.route('/hotel_ratings/<int:hotel_id>')
-def hotel_ratings(hotel_id):
-    if 'user_id' not in session:
-        return redirect('/login')
-        
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("""
-            SELECT r.id, r.rating, r.review, r.date_posted, u.username
-            FROM ratings r
-            JOIN users u ON r.user_id = u.id
-            WHERE r.hotel_id = ?
-            ORDER BY r.date_posted DESC
-        """, (hotel_id,))
-        
-        ratings = [dict(
-            id=row[0],
-            rating=row[1],
-            review=row[2],
-            date=row[3],
-            username=row[4]
-        ) for row in c.fetchall()]
-        
-        # Get hotel info for the page
-        c.execute("SELECT name FROM hotels WHERE id = ?", (hotel_id,))
-        hotel_name = c.fetchone()[0]
-        
-        # Calculate average rating
-        c.execute("SELECT AVG(rating) FROM ratings WHERE hotel_id = ?", (hotel_id,))
-        avg_rating = c.fetchone()[0]
-        if avg_rating:
-            avg_rating = round(avg_rating, 1)
-        else:
-            avg_rating = "No ratings yet"
-    
-    return render_template('hotel_ratings.html', 
-                          ratings=ratings, 
-                          hotel_id=hotel_id,
-                          hotel_name=hotel_name,
-                          avg_rating=avg_rating)
-@app.route('/profile', methods=['GET', 'POST'])
-def profile():
-    if 'user_id' not in session:
-        return redirect('/login')
-        
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        
-        if request.method == 'POST':
-            email = request.form['email'].lower()
-            age = int(request.form['age'])
-            current_password = request.form['current_password']
-            new_password = request.form['new_password']
-            
-            # Verify current password
-            c.execute("SELECT password FROM users WHERE id=?", (session['user_id'],))
-            stored_password = c.fetchone()[0]
-            
-            if current_password == stored_password:
-                if new_password:
-                    # Update password along with other details
-                    c.execute("""
-                        UPDATE users 
-                        SET email=?, age=?, password=?
-                        WHERE id=?
-                    """, (email, age, new_password, session['user_id']))
-                else:
-                    # Update only email and age
-                    c.execute("""
-                        UPDATE users 
-                        SET email=?, age=?
-                        WHERE id=?
-                    """, (email, age, session['user_id']))
-                
-                conn.commit()
-                flash("Profile updated successfully!")
-            else:
-                flash("Current password is incorrect")
-                
-        # Get user data
-        c.execute("""
-            SELECT username, email, age 
-            FROM users 
-            WHERE id=?
-        """, (session['user_id'],))
-        
-        user = c.fetchone()
-        user_data = {
-            'username': user[0],
-            'email': user[1],
-            'age': user[2]
-        }
-        
-        # Get user's booking history
-        c.execute("""
-            SELECT b.id, h.name, r.room_type, b.checkin_date, b.checkout_date
-            FROM bookings b
-            JOIN rooms r ON b.room_id = r.id
-            JOIN hotels h ON r.hotel_id = h.id
-            WHERE b.user_id = ?
-            ORDER BY b.id DESC
-        """, (session['user_id'],))
-        
-        bookings = [dict(
-            id=row[0],
-            hotel_name=row[1],
-            room_type=row[2],
-            checkin=row[3],
-            checkout=row[4]
-        ) for row in c.fetchall()]
-        
-    return render_template('profile.html', user=user_data, bookings=bookings)
-@app.route('/offers')
-def view_offers():
-    if 'user_id' not in session:
-        return redirect('/login')
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("""
-            SELECT o.id, o.title, o.description, o.discount_percent, 
-                   o.start_date, o.end_date, h.name, o.hotel_id
-            FROM offers o
-            JOIN hotels h ON o.hotel_id = h.id
-            WHERE date('now') BETWEEN o.start_date AND o.end_date
-            ORDER BY o.discount_percent DESC
-        """)
-        
-        offers = [dict(
-            id=row[0],
-            title=row[1],
-            description=row[2],
-            discount=row[3],
-            start_date=row[4],
-            end_date=row[5],
-            hotel_name=row[6],
-            hotel_id=row[7]
-        ) for row in c.fetchall()]
-    
-    return render_template('offers.html', offers=offers)
-
-@app.route('/admin/manage_offers', methods=['GET'])
-def manage_offers():
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect('/login')
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("""
-            SELECT o.id, o.title, o.discount_percent, 
-                   o.start_date, o.end_date, h.name
-            FROM offers o
-            JOIN hotels h ON o.hotel_id = h.id
-            ORDER BY o.end_date DESC
-        """)
-        
-        offers = [dict(
-            id=row[0],
-            title=row[1],
-            discount=row[2],
-            start_date=row[3],
-            end_date=row[4],
-            hotel_name=row[5]
-        ) for row in c.fetchall()]
-        
-        # Get all hotels for the add offer form
-        c.execute("SELECT id, name FROM hotels")
-        hotels = [dict(id=row[0], name=row[1]) for row in c.fetchall()]
-    
-    return render_template('admin_offers.html', offers=offers, hotels=hotels)
-
-@app.route('/admin/add_offer', methods=['POST'])
-def add_offer():
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect('/login')
-    
-    title = request.form['title']
-    description = request.form['description']
-    discount = int(request.form['discount'])
-    start_date = request.form['start_date']
-    end_date = request.form['end_date']
-    hotel_id = int(request.form['hotel_id'])
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("""
-            INSERT INTO offers 
-            (title, description, discount_percent, start_date, end_date, hotel_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (title, description, discount, start_date, end_date, hotel_id))
-        conn.commit()
-        flash("New offer added successfully!")
-    
-    return redirect('/admin/manage_offers')
-
-@app.route('/admin/delete_offer/<int:offer_id>', methods=['POST'])
-def delete_offer(offer_id):
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect('/login')
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute("DELETE FROM offers WHERE id = ?", (offer_id,))
-        conn.commit()
-        flash("Offer deleted successfully")
-    
-    return redirect('/admin/manage_offers')
 
 @app.route('/payment-success')
 def payment_success():
