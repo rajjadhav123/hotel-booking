@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Special Offers{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Special Offers</li>
+                </ol>
+            </nav>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Current Special Offers</h3>
+                </div>
+                <div class="card-body">
+                    {% if offers %}
+                        <div class="row">
+                            {% for offer in offers %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                        <h5 class="m-0">{{ offer.title }}</h5>
+                                        <span class="badge bg-warning text-dark rounded-pill">{{ offer.discount }}% OFF</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">{{ offer.hotel_name }}</h6>
+                                        <p class="card-text">{{ offer.description }}</p>
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                Valid from {{ offer.start_date }} to {{ offer.end_date }}
+                                            </small>
+                                        </p>
+                                        <a href="/hotel/{{ offer.hotel_id }}" class="btn btn-outline-primary">View Hotel</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No special offers available at this time. Check back later!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
