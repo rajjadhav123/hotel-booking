@@ -609,6 +609,202 @@ def sync_database():
         flash("Database synchronized successfully")
     
     return redirect('/admin')
+# User profile page
+@app.route('/user_profile')
+def user_profile():
+    # Logic to get user info
+    return render_template('user_profile.html')
+
+# Favorites page
+@app.route('/favorites')
+def favorites():
+    # Get user's favorite hotels
+    return render_template('favorites.html')
+
+# Toggle favorite status for a hotel
+@app.route('/toggle_favorite/<int:hotel_id>', methods=['POST'])
+def toggle_favorite(hotel_id):
+    # Add or remove hotel from favorites
+    return jsonify({"status": "success"})
+
+# Modified dashboard route to include filtering
+@app.route('/dashboard')
+def dashboard():
+    # Get filter parameters
+    location = request.args.get('location', '')
+    price_range = request.args.get('price_range', '')
+    sort_by = request.args.get('sort_by', 'recommended')
+    
+    # Apply filters to hotel query
+    # ... filtering logic here ...
+    
+    # Pass additional data to the template
+    upcoming_bookings_count = 0  # Replace with actual query
+    total_bookings = 0  # Replace with actual query
+    reward_points = 0  # Replace with actual query
+    favorite_hotels_count = 0  # Replace with actual query
+    favorite_hotels = []  # List of IDs of favorite hotels
+    
+    return render_template(
+        'user_dashboard.html', 
+        hotels=hotels,
+        upcoming_bookings_count=upcoming_bookings_count,
+        total_bookings=total_bookings,
+        reward_points=reward_points,
+        favorite_hotels_count=favorite_hotels_count,
+        favorite_hotels=favorite_hotels
+    )
+# User profile page
+@app.route('/user_profile')
+def user_profile():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Fetch user data from database
+    user = get_user_by_username(session['username'])
+    
+    # Get user preferences
+    user_preferences = get_user_preferences(session['username'])
+    
+    # Get account activity
+    account_activity = get_account_activity(session['username'])
+    
+    return render_template('user_profile.html', 
+                          user=user, 
+                          user_preferences=user_preferences,
+                          account_activity=account_activity)
+
+# Update user profile information
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    fullname = request.form.get('fullname')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    address = request.form.get('address')
+    
+    # Update user in database
+    update_user_info(session['username'], fullname, email, phone, address)
+    
+    flash('Profile updated successfully', 'success')
+    return redirect(url_for('user_profile'))
+
+# Change user password
+@app.route('/change_password', methods=['POST'])
+def change_password():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    # Validate current password
+    user = get_user_by_username(session['username'])
+    if not check_password(current_password, user['password']):
+        flash('Current password is incorrect', 'danger')
+        return redirect(url_for('user_profile'))
+    
+    # Validate new password
+    if new_password != confirm_password:
+        flash('New passwords do not match', 'danger')
+        return redirect(url_for('user_profile'))
+    
+    # Update password in database
+    update_user_password(session['username'], new_password)
+    
+    flash('Password changed successfully', 'success')
+    return redirect(url_for('user_profile'))
+
+# Update user preferences
+@app.route('/update_preferences', methods=['POST'])
+def update_preferences():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    notifications = request.form.getlist('notifications[]')
+    currency = request.form.get('currency')
+    
+    # Update preferences in database
+    update_user_preferences(session['username'], notifications, currency)
+    
+    flash('Preferences updated successfully', 'success')
+    return redirect(url_for('user_profile'))
+
+# Favorites page
+@app.route('/favorites')
+def favorites():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Get user's favorite hotels
+    favorite_hotels = get_user_favorites(session['username'])
+    
+    return render_template('favorites.html', favorite_hotels=favorite_hotels)
+
+# Toggle favorite status for a hotel
+@app.route('/toggle_favorite/<int:hotel_id>', methods=['POST'])
+def toggle_favorite(hotel_id):
+    if 'username' not in session:
+        return jsonify({"status": "error", "message": "User not logged in"})
+    
+    # Check if hotel exists
+    hotel = get_hotel_by_id(hotel_id)
+    if not hotel:
+        return jsonify({"status": "error", "message": "Hotel not found"})
+    
+    # Toggle favorite status
+    result = toggle_user_favorite(session['username'], hotel_id)
+    
+    return jsonify({"status": "success", "is_favorite": result})
+
+# Helper functions for database operations
+def get_user_by_username(username):
+    # Connect to your database and fetch user info
+    # Example: return query result
+    pass
+
+def get_user_preferences(username):
+    # Connect to your database and fetch user preferences
+    # Example: return default preferences if none exist
+    return {
+        'notifications': ['booking_confirmations'],
+        'currency': 'USD'
+    }
+
+def get_account_activity(username):
+    # Connect to your database and fetch recent activity
+    # Example: return last 5 login activities
+    return []
+
+def update_user_info(username, fullname, email, phone, address):
+    # Connect to your database and update user info
+    pass
+
+def update_user_password(username, new_password):
+    # Hash password and update in database
+    pass
+
+def update_user_preferences(username, notifications, currency):
+    # Connect to your database and update preferences
+    pass
+
+def get_user_favorites(username):
+    # Connect to your database and fetch favorite hotels
+    # Example: return a list of hotels
+    return []
+
+def toggle_user_favorite(username, hotel_id):
+    # Connect to your database
+    # If hotel is already a favorite, remove it, otherwise add it
+    # Return True if now a favorite, False if removed
+    return True
+
+def get_hotel_by_id(hotel_id):
+    # Connect to your database and fetch hotel by ID
+    pass
 
 @app.route('/payment-success')
 def payment_success():

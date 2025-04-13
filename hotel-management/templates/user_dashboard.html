@@ -2,35 +2,167 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hotels</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
   <div class="container mt-4">
-    <div class="d-flex justify-content-between mb-3">
+    <!-- Header with navigation -->
+    <div class="d-flex justify-content-between mb-4 align-items-center">
       <h3>Welcome, {{ session['username'] }}</h3>
       <div>
-        <a href="{{ url_for('my_bookings') }}" class="btn btn-info">My Bookings</a>
-        <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary">Log Out</a>
+        <a href="{{ url_for('my_bookings') }}" class="btn btn-info me-2">
+          <i class="fas fa-calendar-check me-1"></i> My Bookings
+        </a>
+        <a href="{{ url_for('user_profile') }}" class="btn btn-secondary me-2">
+          <i class="fas fa-user me-1"></i> My Profile
+        </a>
+        <a href="{{ url_for('favorites') }}" class="btn btn-success me-2">
+          <i class="fas fa-heart me-1"></i> Favorites
+        </a>
+        <a href="https://hotel-booking-xq6q.onrender.com/logout" class="btn btn-outline-secondary">
+          <i class="fas fa-sign-out-alt me-1"></i> Log Out
+        </a>
       </div>
     </div>
     
+    <!-- Flash messages section -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- User stats summary -->
+    <div class="card mb-4 bg-light">
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-3">
+            <h6>Upcoming Stays</h6>
+            <p class="h4">{{ upcoming_bookings_count|default(0) }}</p>
+          </div>
+          <div class="col-md-3">
+            <h6>Total Bookings</h6>
+            <p class="h4">{{ total_bookings|default(0) }}</p>
+          </div>
+          <div class="col-md-3">
+            <h6>Rewards Points</h6>
+            <p class="h4">{{ reward_points|default(0) }}</p>
+          </div>
+          <div class="col-md-3">
+            <h6>Favorite Hotels</h6>
+            <p class="h4">{{ favorite_hotels_count|default(0) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and filter section -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Find Your Perfect Stay</h5>
+        <form class="row g-3" method="GET" action="{{ url_for('dashboard') }}">
+          <div class="col-md-4">
+            <label for="location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="location" name="location" placeholder="City, Country" value="{{ request.args.get('location', '') }}">
+          </div>
+          <div class="col-md-3">
+            <label for="price_range" class="form-label">Price Range</label>
+            <select class="form-select" id="price_range" name="price_range">
+              <option value="">All Prices</option>
+              <option value="budget" {% if request.args.get('price_range') == 'budget' %}selected{% endif %}>Budget</option>
+              <option value="mid" {% if request.args.get('price_range') == 'mid' %}selected{% endif %}>Mid-range</option>
+              <option value="luxury" {% if request.args.get('price_range') == 'luxury' %}selected{% endif %}>Luxury</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label for="sort_by" class="form-label">Sort By</label>
+            <select class="form-select" id="sort_by" name="sort_by">
+              <option value="recommended" {% if request.args.get('sort_by') == 'recommended' %}selected{% endif %}>Recommended</option>
+              <option value="price_asc" {% if request.args.get('sort_by') == 'price_asc' %}selected{% endif %}>Price (Low to High)</option>
+              <option value="price_desc" {% if request.args.get('sort_by') == 'price_desc' %}selected{% endif %}>Price (High to Low)</option>
+              <option value="rating" {% if request.args.get('sort_by') == 'rating' %}selected{% endif %}>Rating</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <h3>Available Hotels</h3>
     <div class="row">
       {% for hotel in hotels %}
       <div class="col-md-4">
-        <div class="card mb-4">
-          <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="Hotel Image">
-          <div class="card-body">
-            <h5 class="card-title">{{ hotel['name'] }}</h5>
-            <p class="card-text">{{ hotel['location'] }}</p>
-            <a href="/hotel/{{ hotel['id'] }}" class="btn btn-primary">View Rooms</a>
+        <div class="card mb-4 h-100">
+          <div class="position-relative">
+            <img src="{{ url_for('static', filename='images/' ~ hotel['image_path']) }}" class="card-img-top" alt="{{ hotel['name'] }}">
+            <!-- Favorite button -->
+            <button class="btn position-absolute top-0 end-0 m-2 text-danger bg-white rounded-circle p-2 favorite-btn" 
+                    data-hotel-id="{{ hotel['id'] }}" title="Add to favorites">
+              <i class="fas {% if hotel['id'] in favorite_hotels %}fa-heart{% else %}fa-heart{% endif %}"></i>
+            </button>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start">
+              <h5 class="card-title">{{ hotel['name'] }}</h5>
+              <div class="badge bg-warning text-dark">
+                <i class="fas fa-star"></i> {{ hotel.get('rating', '4.5') }}
+              </div>
+            </div>
+            <p class="card-text"><i class="fas fa-map-marker-alt me-1"></i> {{ hotel['location'] }}</p>
+            <p class="card-text text-muted">
+              <small>{{ hotel.get('description_short', 'Modern hotel with excellent amenities and service.') }}</small>
+            </p>
+            <p class="card-text text-success fw-bold">From ${{ hotel.get('price_from', '120') }} / night</p>
+            <a href="/hotel/{{ hotel['id'] }}" class="btn btn-outline-primary mt-auto w-100">View Rooms</a>
           </div>
         </div>
       </div>
       {% endfor %}
     </div>
   </div>
+
+  <!-- JS Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // For favorites functionality (this would need backend implementation)
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const hotelId = this.dataset.hotelId;
+        
+        // Toggle heart icon (in a real app, this would send an AJAX request)
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fas');
+        icon.classList.toggle('far');
+        
+        // Send request to backend (simplified example)
+        fetch(`/toggle_favorite/${hotelId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Handle response if needed
+          console.log('Success:', data);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
