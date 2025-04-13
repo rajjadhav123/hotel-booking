@@ -364,33 +364,43 @@ def edit_hotel(hotel_id):
         c.execute("SELECT * FROM hotels WHERE id = ?", (hotel_id,))
         hotel = c.fetchone()
         
-        # Get rooms for this hotel - FIXED QUERY
-        c.execute("SELECT id, room_type, is_booked FROM rooms WHERE hotel_id = ?", (hotel_id,))
-        rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
+        # Fix the query to properly get room information
+        c.execute("""
+            SELECT r.id, r.room_type, r.is_booked 
+            FROM rooms r 
+            WHERE r.hotel_id = ?
+        """, (hotel_id,))
+        
+        rooms = []
+        for row in c.fetchall():
+            rooms.append({
+                'id': row[0],
+                'room_type': row[1],
+                'is_booked': row[2]
+            })
         
     return render_template('edit_hotel.html', 
                           hotel={'id': hotel[0], 'name': hotel[1], 'location': hotel[2], 'image_path': hotel[3]},
                           rooms=rooms)
-
 @app.route('/add_room/<int:hotel_id>', methods=['POST'])
 def add_room(hotel_id):
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect('/login')
     
-    room_type = request.form['room_type']
+    room_type = request.form['room_type'].strip()
     
-    if not room_type or room_type.strip() == "":
-        room_type = "Standard Room"  # Default room type if empty
+    # Provide a default name if empty
+    if not room_type:
+        room_type = "Standard Room"
     
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         c.execute("INSERT INTO rooms (hotel_id, room_type, is_booked) VALUES (?, ?, 0)", 
-                 (hotel_id, room_type))
+                  (hotel_id, room_type))
         conn.commit()
         flash("Room added successfully")
     
     return redirect(f'/edit_hotel/{hotel_id}')
-
 @app.route('/delete_room/<int:room_id>/<int:hotel_id>', methods=['POST'])
 def delete_room(room_id, hotel_id):
     if 'user_id' not in session or not session.get('is_admin'):
@@ -399,21 +409,20 @@ def delete_room(room_id, hotel_id):
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         
-        # First check if this room is booked
-        c.execute("SELECT is_booked FROM rooms WHERE id = ?", (room_id,))
-        room_status = c.fetchone()
+        # Check if room has any bookings
+        c.execute("SELECT id FROM bookings WHERE room_id = ?", (room_id,))
+        bookings = c.fetchall()
         
-        if room_status and room_status[0] == 1:
-            flash("Cannot delete room that is currently booked")
+        if bookings:
+            # Room has bookings, don't delete it
+            flash("Cannot delete room with active bookings. Cancel the bookings first.")
         else:
-            # Also check bookings table to be safe
-            c.execute("SELECT id FROM bookings WHERE room_id = ?", (room_id,))
-            if c.fetchone():
-                flash("Cannot delete room with active bookings")
-            else:
-                c.execute("DELETE FROM rooms WHERE id = ?", (room_id,))
-                conn.commit()
-                flash("Room deleted successfully")
+            # No bookings, safe to delete
+            c.execute("DELETE FROM rooms WHERE id = ?", (room_id,))
+            conn.commit()
+            flash("Room deleted successfully")
+    
+    return redirect(f'/edit_hotel/{hotel_id}')
     
     return redirect(f'/edit_hotel/{hotel_id}')
 @app.route('/admin/cancel_booking/<int:booking_id>', methods=['GET'])
@@ -576,6 +585,30 @@ def view_database():
         data['bookings'] = [dict(row) for row in c.fetchall()]
         
     return render_template('database_view.html', data=data)
+@app.route('/admin/sync_database', methods=['GET'])
+def sync_database():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect('/login')
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        
+        # Reset all rooms to not booked
+        c.execute("UPDATE rooms SET is_booked = 0")
+        
+        # Get all active bookings
+        c.execute("SELECT room_id FROM bookings")
+        booked_rooms = c.fetchall()
+        
+        # Mark each room with a booking as booked
+        for room in booked_rooms:
+            room_id = room[0]
+            c.execute("UPDATE rooms SET is_booked = 1 WHERE id = ?", (room_id,))
+        
+        conn.commit()
+        flash("Database synchronized successfully")
+    
+    return redirect('/admin')
 
 @app.route('/payment-success')
 def payment_success():
