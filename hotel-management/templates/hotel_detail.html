@@ -46,89 +46,6 @@
     .view-toggle {
       margin-bottom: 15px;
     }
-    
-    /* Additional calendar styles from template */
-    .calendar-legend {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 10px;
-    }
-    
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    
-    .room {
-      padding: 3px;
-      font-size: 12px;
-      border-radius: 3px;
-      width: 15px;
-      height: 15px;
-    }
-    
-    .room.available {
-      background-color: #28a745;
-    }
-    
-    .room.booked {
-      background-color: #dc3545;
-    }
-    
-    /* Custom calendar styles */
-    .custom-calendar {
-      margin-top: 20px;
-    }
-    
-    .month-navigation {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .month-navigation button {
-      background: #f0f0f0;
-      border: 1px solid #ddd;
-      padding: 5px 15px;
-      margin: 0 10px;
-      cursor: pointer;
-      border-radius: 3px;
-    }
-    
-    .month-navigation h3 {
-      margin: 0;
-      min-width: 200px;
-      text-align: center;
-    }
-    
-    .calendar-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    
-    .calendar-table th, .calendar-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      vertical-align: top;
-    }
-    
-    .calendar-table th {
-      background-color: #f5f5f5;
-    }
-    
-    .day-number {
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    
-    .room-status {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
   </style>
 </head>
 <body>
@@ -139,7 +56,6 @@
       <div class="col-md-8">
         <h2>{{ hotel.name }}</h2>
         <p class="lead">Location: {{ hotel.location }}</p>
-        <div id="hotel-data" data-hotel-id="{{ hotel.id }}"></div>
       </div>
     </div>
 
@@ -169,7 +85,7 @@
           </div>
           <div class="col-md-4 text-end">
             {% if not room.is_booked %}
-            <button type="button" class="btn btn-primary book-room-btn" data-room-id="{{ room.id }}" data-room-type="{{ room.room_type }}" data-bs-toggle="modal" data-bs-target="#bookingModal">
+            <button type="button" class="btn btn-primary book-room-btn" data-room-id="{{ room.id }}" data-bs-toggle="modal" data-bs-target="#bookingModal">
               Book Now
             </button>
             {% else %}
@@ -183,28 +99,11 @@
 
     <!-- Calendar View -->
     <div id="calendar-container" class="calendar-container" style="display: none;">
-      <div class="btn-group mb-3" role="group">
-        <button type="button" class="btn btn-outline-primary active" id="fullcalendar-btn">Interactive Calendar</button>
-        <button type="button" class="btn btn-outline-primary" id="simple-calendar-btn">Simple Calendar</button>
+      <div class="legend mb-3">
+        <span><span class="room-status-indicator available-indicator"></span> Available</span>
+        <span class="ms-3"><span class="room-status-indicator booked-indicator"></span> Booked</span>
       </div>
-      
-      <!-- FullCalendar View -->
-      <div id="fullcalendar-view">
-        <div class="legend mb-3">
-          <span><span class="room-status-indicator available-indicator"></span> Available</span>
-          <span class="ms-3"><span class="room-status-indicator booked-indicator"></span> Booked</span>
-        </div>
-        <div id="room-calendar"></div>
-      </div>
-      
-      <!-- Simple Calendar View -->
-      <div id="simple-calendar-view" class="custom-calendar" style="display: none;">
-        <div class="calendar-legend">
-          <div class="legend-item"><span class="room available"></span> Available</div>
-          <div class="legend-item"><span class="room booked"></span> Booked</div>
-        </div>
-        <div id="simple-calendar-container"></div>
-      </div>
+      <div id="room-calendar"></div>
     </div>
 
     <!-- Booking Modal -->
@@ -280,10 +179,9 @@
     // Price per night - in real app, this would come from the database
     const pricePerNight = 1500;
     
-    // Initialize the calendars
-    let fullCalendarInstance;
+    // Initialize the calendar
+    let calendar;
     
-    // Handle view toggling
     document.getElementById('calendar-view-btn').addEventListener('click', function() {
       // Switch active button 
       document.getElementById('list-view-btn').classList.remove('active');
@@ -293,9 +191,9 @@
       document.getElementById('calendar-container').style.display = 'block';
       document.getElementById('list-container').style.display = 'none';
       
-      // Initialize full calendar if not already done
-      if (!fullCalendarInstance) {
-        fullCalendarInstance = $('#room-calendar').fullCalendar({
+      // Initialize calendar if not already done
+      if (!calendar) {
+        calendar = $('#room-calendar').fullCalendar({
           header: {
             left: 'prev,next today',
             center: 'title',
@@ -317,16 +215,6 @@
           }
         });
       }
-      
-      // Show appropriate calendar view
-      const isSimpleCalendarVisible = document.getElementById('simple-calendar-btn').classList.contains('active');
-      document.getElementById('fullcalendar-view').style.display = isSimpleCalendarVisible ? 'none' : 'block';
-      document.getElementById('simple-calendar-view').style.display = isSimpleCalendarVisible ? 'block' : 'none';
-      
-      // Initialize simple calendar if selected
-      if (isSimpleCalendarVisible && !document.getElementById('simple-calendar-container').innerHTML) {
-        fetchRoomAvailabilityData();
-      }
     });
     
     document.getElementById('list-view-btn').addEventListener('click', function() {
@@ -337,26 +225,6 @@
       // Show list, hide calendar
       document.getElementById('list-container').style.display = 'block';
       document.getElementById('calendar-container').style.display = 'none';
-    });
-    
-    // Toggle between calendar types
-    document.getElementById('fullcalendar-btn').addEventListener('click', function() {
-      document.getElementById('simple-calendar-btn').classList.remove('active');
-      this.classList.add('active');
-      document.getElementById('fullcalendar-view').style.display = 'block';
-      document.getElementById('simple-calendar-view').style.display = 'none';
-    });
-    
-    document.getElementById('simple-calendar-btn').addEventListener('click', function() {
-      document.getElementById('fullcalendar-btn').classList.remove('active');
-      this.classList.add('active');
-      document.getElementById('fullcalendar-view').style.display = 'none';
-      document.getElementById('simple-calendar-view').style.display = 'block';
-      
-      // Initialize simple calendar if not already done
-      if (!document.getElementById('simple-calendar-container').innerHTML) {
-        fetchRoomAvailabilityData();
-      }
     });
     
     // Generate calendar events from room data
@@ -400,7 +268,7 @@
     document.querySelectorAll('.book-room-btn').forEach(button => {
       button.addEventListener('click', function() {
         const roomId = this.getAttribute('data-room-id');
-        const roomType = this.getAttribute('data-room-type');
+        const roomType = this.closest('.room-item').querySelector('h5').textContent;
         
         // Set form values
         document.getElementById('room_id').value = roomId;
@@ -509,187 +377,6 @@
         alert('Payment initialization failed');
       });
     });
-    
-    // Functions for simple calendar view
-    function fetchRoomAvailabilityData() {
-      // In a real application, fetch this from the server
-      // For now, we'll use the same data as FullCalendar
-      buildSimpleCalendar(rooms);
-    }
-    
-    function buildSimpleCalendar(roomsData) {
-      const calendarContainer = document.getElementById('simple-calendar-container');
-      if (!calendarContainer) return;
-      
-      // Get current date and create date range for calendar (current month)
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      
-      // Create first day of month and last day of month
-      const firstDay = new Date(currentYear, currentMonth, 1);
-      const lastDay = new Date(currentYear, currentMonth + 1, 0);
-      
-      // Create month header
-      const monthNames = ["January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"];
-      
-      const calendarHeader = document.createElement('div');
-      calendarHeader.className = 'month-navigation';
-      calendarHeader.innerHTML = `
-          <button id="prev-month-btn" class="btn btn-sm btn-outline-secondary">&lt;</button>
-          <h3>${monthNames[currentMonth]} ${currentYear}</h3>
-          <button id="next-month-btn" class="btn btn-sm btn-outline-secondary">&gt;</button>
-      `;
-      calendarContainer.appendChild(calendarHeader);
-      
-      // Create calendar table
-      const calendarTable = document.createElement('table');
-      calendarTable.className = 'calendar-table table table-bordered';
-      
-      // Add day headers
-      const dayHeaders = document.createElement('tr');
-      const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      
-      daysOfWeek.forEach(day => {
-          const th = document.createElement('th');
-          th.textContent = day;
-          dayHeaders.appendChild(th);
-      });
-      
-      calendarTable.appendChild(dayHeaders);
-      
-      // Calculate days in month and create calendar grid
-      const daysInMonth = lastDay.getDate();
-      const firstDayOfWeek = firstDay.getDay(); // 0 for Sunday, 1 for Monday, etc.
-      
-      let dateCounter = 1;
-      let calendarRows = [];
-      
-      // Create rows for the calendar
-      for (let i = 0; i < 6; i++) { // Max 6 weeks in a month
-          if (dateCounter > daysInMonth) break;
-          
-          const weekRow = document.createElement('tr');
-          
-          for (let j = 0; j < 7; j++) { // 7 days in a week
-              const dayCell = document.createElement('td');
-              
-              if ((i === 0 && j < firstDayOfWeek) || dateCounter > daysInMonth) {
-                  // Empty cell before first day or after last day
-                  dayCell.innerHTML = '&nbsp;';
-              } else {
-                  // Valid day in month
-                  const currentDate = new Date(currentYear, currentMonth, dateCounter);
-                  const dateStr = formatDate(currentDate);
-                  
-                  dayCell.dataset.date = dateStr;
-                  dayCell.innerHTML = `
-                      <div class="day-number">${dateCounter}</div>
-                      <div class="room-status" id="room-status-${dateStr}"></div>
-                  `;
-                  
-                  dateCounter++;
-              }
-              
-              weekRow.appendChild(dayCell);
-          }
-          
-          calendarTable.appendChild(weekRow);
-          calendarRows.push(weekRow);
-      }
-      
-      calendarContainer.appendChild(calendarTable);
-      
-      // Fill room availability status
-      populateRoomAvailability(roomsData, currentYear, currentMonth);
-      
-      // Add event listeners for month navigation
-      document.getElementById('prev-month-btn').addEventListener('click', () => {
-          calendarContainer.innerHTML = '';
-          navigateMonth(-1);
-      });
-      
-      document.getElementById('next-month-btn').addEventListener('click', () => {
-          calendarContainer.innerHTML = '';
-          navigateMonth(1);
-      });
-    }
-
-    function navigateMonth(change) {
-      // Get current date from URL or use today
-      let currentDate = new Date();
-      
-      // Change month
-      currentDate.setMonth(currentDate.getMonth() + change);
-      
-      // Rebuild calendar with new month
-      buildSimpleCalendar(rooms);
-    }
-
-    function populateRoomAvailability(roomsData, year, month) {
-      // Loop through each day of the month
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-          const currentDate = new Date(year, month, day);
-          const dateStr = formatDate(currentDate);
-          const roomStatusEl = document.getElementById(`room-status-${dateStr}`);
-          
-          if (!roomStatusEl) continue;
-          
-          // Check availability for each room on this date
-          roomsData.forEach(room => {
-              const isBooked = isRoomBooked(room, currentDate);
-              const roomSpan = document.createElement('div');
-              roomSpan.className = isBooked ? 'room booked' : 'room available';
-              roomSpan.textContent = room.roomType.substring(0, 1); // Just the first letter to save space
-              roomSpan.title = room.roomType;
-              roomSpan.dataset.roomId = room.id;
-              
-              // Add click event for booking if available
-              if (!isBooked) {
-                roomSpan.style.cursor = 'pointer';
-                roomSpan.addEventListener('click', function() {
-                  $('#room_id').val(room.id);
-                  $('#selected-room-type').text(room.roomType);
-                  $('#checkin_date').val(dateStr);
-                  $('#checkout_date').val(moment(dateStr).add(1, 'days').format('YYYY-MM-DD'));
-                  updateTotalPrice();
-                  $('#bookingModal').modal('show');
-                });
-              }
-              
-              roomStatusEl.appendChild(roomSpan);
-          });
-      }
-    }
-
-    function isRoomBooked(room, date) {
-      // Check if room is booked for the given date
-      if (room.isBooked) return true;
-      
-      const momentDate = moment(date);
-      
-      for (const booking of room.bookings) {
-          const checkin = moment(booking.start);
-          const checkout = moment(booking.end);
-          
-          // If date is between checkin and checkout (inclusive for checkin, exclusive for checkout)
-          if (momentDate.isBetween(checkin, checkout, null, '[]')) {
-              return true;
-          }
-      }
-      
-      return false;
-    }
-
-    function formatDate(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
   </script>
 </body>
 </html>

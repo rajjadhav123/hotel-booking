@@ -879,12 +879,12 @@ def room_availability(hotel_id):
         
         # Get all rooms for this hotel
         c.execute("""
-            SELECT r.id, r.room_type
+            SELECT r.id, r.room_type, r.is_booked
             FROM rooms r
             WHERE r.hotel_id = ?
         """, (hotel_id,))
         
-        rooms = [dict(id=row[0], room_type=row[1]) for row in c.fetchall()]
+        rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
         
         # Get all bookings for these rooms
         room_ids = [room['id'] for room in rooms]
@@ -896,26 +896,16 @@ def room_availability(hotel_id):
                 WHERE b.room_id IN ({placeholders})
             """, room_ids)
             
-            bookings = [dict(
-                room_id=row[0], 
-                checkin=row[1], 
-                checkout=row[2]
-            ) for row in c.fetchall()]
+            bookings = [dict(room_id=row[0], checkin=row[1], checkout=row[2]) for row in c.fetchall()]
         else:
             bookings = []
     
     # Format data for calendar
-    calendar_data = []
     for room in rooms:
-        room_bookings = [b for b in bookings if b['room_id'] == room['id']]
-        room_data = {
-            'id': room['id'],
-            'room_type': room['room_type'],
-            'bookings': room_bookings
-        }
-        calendar_data.append(room_data)
+        room['bookings'] = [b for b in bookings if b['room_id'] == room['id']]
     
-    return jsonify(calendar_data)
+    return jsonify(rooms)
+
 @app.route('/payment-success')
 def payment_success():
     return "✅ Payment successful!"
