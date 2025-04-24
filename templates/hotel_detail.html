@@ -46,6 +46,15 @@
     .view-toggle {
       margin-bottom: 15px;
     }
+.room-calendar {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.fc-day:hover {
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
   </style>
 </head>
 <body>
@@ -153,6 +162,8 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   
   <script>
+const DEBUG = true;
+
     // Room data from Flask
    // Update this part where you define the rooms data
 const rooms = [
@@ -211,18 +222,74 @@ const rooms = [
       }
     });
     
-    document.getElementById('list-view-btn').addEventListener('click', function() {
-      // Switch active button
-      document.getElementById('calendar-view-btn').classList.remove('active');
-      this.classList.add('active');
+   document.getElementById('calendar-view-btn').addEventListener('click', function() {
+  // Switch active button 
+  document.getElementById('list-view-btn').classList.remove('active');
+  this.classList.add('active');
+  
+  // Show calendar, hide list
+  document.getElementById('calendar-container').style.display = 'block';
+  document.getElementById('list-container').style.display = 'none';
+  
+  // Initialize calendar if not already done or refresh it
+  if (!calendar) {
+    if (DEBUG) console.log("Initializing calendar for the first time");
+    initializeCalendar();
+  } else {
+    if (DEBUG) console.log("Calendar already initialized, refreshing data");
+    loadBookingData();
+  }
+});
+
+function initializeCalendar() {
+  // Load booking data first, then initialize calendar
+  fetch('/api/room-availability/{{ hotel.id }}')
+    .then(response => response.json())
+    .then(data => {
+      if (DEBUG) console.log("Initializing with booking data:", data);
       
-      // Show list, hide calendar
-      document.getElementById('list-container').style.display = 'block';
-      document.getElementById('calendar-container').style.display = 'none';
-    });
+      // Update our local rooms data with real booking information
+      for (const serverRoom of data) {
+        const localRoom = rooms.find(r => r.id === serverRoom.id);
+        if (localRoom) {
+          localRoom.bookings = serverRoom.bookings.map(booking => ({
+            start: booking.checkin,
+            end: booking.checkout
+          }));
+        }
+      }
+      
+      // Now initialize the calendar with the correct data
+      calendar = $('#room-calendar').fullCalendar({
+        header: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'month,agendaWeek'
+        },
+        defaultView: 'month',
+        editable: false,
+        events: generateCalendarEvents(),
+        eventClick: function(calEvent) {
+          if (!calEvent.isBooked) {
+            // If room is available on this date, open booking modal
+            $('#room_id').val(calEvent.roomId);
+            $('#selected-room-type').text(calEvent.title);
+            $('#checkin_date').val(calEvent.start.format('YYYY-MM-DD'));
+            $('#checkout_date').val(moment(calEvent.start).add(1, 'days').format('YYYY-MM-DD'));
+            updateTotalPrice();
+            $('#bookingModal').modal('show');
+          }
+        }
+      });
+    })
+    .catch(error => console.error('Error loading booking data for calendar:', error));
+}
     
    // Generate calendar events from room data
+// Update your generateCalendarEvents function:
 function generateCalendarEvents() {
+  if (DEBUG) console.log("Generating calendar events from room data:", rooms);
+  
   const events = [];
   
   // Generate events for the next 60 days
@@ -242,6 +309,10 @@ function generateCalendarEvents() {
         return currentDate.isBetween(bookingStart, bookingEnd, null, '[]');
       });
       
+      if (DEBUG && isBooked) {
+        console.log(`Room ${room.id} is booked on ${dateStr}`);
+      }
+      
       // Add an event for this room on this day
       events.push({
         title: room.roomType,
@@ -257,6 +328,7 @@ function generateCalendarEvents() {
     }
   });
   
+  if (DEBUG) console.log(`Generated ${events.length} calendar events`);
   return events;
 }
     
@@ -272,14 +344,19 @@ function generateCalendarEvents() {
       });
     });
     // Function to load actual booking data from the server
+// Replace your loadBookingData function with this:
 function loadBookingData() {
+  if (DEBUG) console.log("Loading booking data...");
   fetch('/api/room-availability/{{ hotel.id }}')
     .then(response => response.json())
     .then(data => {
+      if (DEBUG) console.log("Received booking data:", data);
+      
       // Update our local rooms data with real booking information
       for (const serverRoom of data) {
         const localRoom = rooms.find(r => r.id === serverRoom.id);
         if (localRoom) {
+          if (DEBUG) console.log(`Updating room ${localRoom.id} with bookings:`, serverRoom.bookings);
           localRoom.bookings = serverRoom.bookings.map(booking => ({
             start: booking.checkin,
             end: booking.checkout
@@ -289,12 +366,15 @@ function loadBookingData() {
       
       // After loading data, refresh the calendar if it's initialized
       if (calendar) {
+        if (DEBUG) console.log("Refreshing calendar with updated booking data");
         calendar.fullCalendar('removeEvents');
         calendar.fullCalendar('addEventSource', generateCalendarEvents());
       }
     })
     .catch(error => console.error('Error loading booking data:', error));
 }
+
+
 
 // Call this function when page loads
 loadBookingData();

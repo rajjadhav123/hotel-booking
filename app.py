@@ -881,6 +881,7 @@ def room_availability(hotel_id):
         return jsonify({"error": "Not authenticated"}), 401
     
     with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row  # This enables column access by name
         c = conn.cursor()
         
         # Get all rooms for this hotel
@@ -890,26 +891,21 @@ def room_availability(hotel_id):
             WHERE r.hotel_id = ?
         """, (hotel_id,))
         
-        rooms = [dict(id=row[0], room_type=row[1], is_booked=row[2]) for row in c.fetchall()]
+        rooms = [dict(id=row['id'], room_type=row['room_type'], is_booked=row['is_booked']) for row in c.fetchall()]
         
-        # Get all bookings for these rooms
-        room_ids = [room['id'] for room in rooms]
-        if room_ids:
-            placeholders = ','.join('?' for _ in room_ids)
-            c.execute(f"""
+        # Get all bookings for these rooms with specific date ranges
+        for room in rooms:
+            room_id = room['id']
+            c.execute("""
                 SELECT b.room_id, b.checkin_date, b.checkout_date
                 FROM bookings b
-                WHERE b.room_id IN ({placeholders})
-            """, room_ids)
+                WHERE b.room_id = ?
+            """, (room_id,))
             
-            bookings = [dict(room_id=row[0], checkin=row[1], checkout=row[2]) for row in c.fetchall()]
-        else:
-            bookings = []
+            room['bookings'] = [dict(room_id=row['room_id'], checkin=row['checkin_date'], checkout=row['checkout_date']) 
+                              for row in c.fetchall()]
     
-    # Format data for calendar
-    for room in rooms:
-        room['bookings'] = [b for b in bookings if b['room_id'] == room['id']]
-    
+    print(f"API response for hotel {hotel_id}: {rooms}")  # Debug output
     return jsonify(rooms)
 
 @app.route('/payment-success')
